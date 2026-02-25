@@ -17,7 +17,7 @@ from telegram.ext import (
     filters,
 )
 
-from bot.config import TELEGRAM_BOT_TOKEN
+from bot.config import TELEGRAM_BOT_TOKEN, DB_PATH
 from bot.database import Database
 from bot.services.price_checker import (
     check_prices_job,
@@ -82,7 +82,7 @@ def build_app() -> Application:
         logger.error("Переменная TELEGRAM_BOT_TOKEN не задана в .env!")
         sys.exit(1)
 
-    db = Database("bot.db")
+    db = Database(DB_PATH)
 
     app = (
         Application.builder()
