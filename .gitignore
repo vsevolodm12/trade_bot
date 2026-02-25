@@ -1,0 +1,27 @@
+# Secrets
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Database
+bot.db
+*.db-shm
+*.db-wal
+
+# Logs & PIDs
+logs/
+*.log
+.bot.pid
+.web.pid
+
+# MacOS
+.DS_Store
+
+# Design files (не нужны в проде)
+пример.html

@@ -1,0 +1,86 @@
+<div class="bg-white rounded-2xl mx-4 p-5" id="card-{{ a.id }}">
+
+  <!-- Top row: ticker + exchange badge + action buttons -->
+  <div class="flex items-start justify-between mb-1">
+    <div class="flex items-center gap-2 min-w-0">
+      <span class="text-base font-bold text-ink">{{ a.ticker }}</span>
+      <span class="text-[11px] font-medium text-faint bg-surface px-2 py-0.5 rounded-full shrink-0">{{ a.exchange }}</span>
+    </div>
+    <div class="flex items-center gap-0.5 shrink-0 ml-2">
+      <!-- Edit -->
+      <button class="flex items-center justify-center w-8 h-8 rounded-full text-faint hover:text-ink hover:bg-surface transition-colors"
+              hx-get="/partials/alerts/{{ a.id }}/edit"
+              hx-target="#card-{{ a.id }}"
+              hx-swap="outerHTML"
+              title="Изменить таргет">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+        </svg>
+      </button>
+      <!-- TradingView -->
+      <a class="flex items-center justify-center w-8 h-8 rounded-full text-faint hover:text-accent hover:bg-surface transition-colors"
+         href="{{ tv_url }}" target="_blank" title="График TradingView">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </a>
+      <!-- Delete -->
+      <button class="flex items-center justify-center w-8 h-8 rounded-full text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
+              hx-delete="/alerts/{{ a.id }}"
+              hx-target="#card-{{ a.id }}"
+              hx-swap="outerHTML"
+              hx-confirm="Удалить уведомление {{ a.ticker }}?"
+              title="Удалить">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Company name -->
+  <p class="text-sm text-faint mb-4 truncate" title="{{ a.company_name }}">{{ a.company_name }}</p>
+
+  <!-- Price row -->
+  <div class="flex items-end justify-between">
+    <div>
+      <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em] mb-1">Текущая</p>
+      {% if a.current_price %}
+        <p class="text-2xl font-semibold text-ink leading-none">{{ a.current_fmt }}</p>
+      {% else %}
+        <p class="text-xl font-medium text-faint leading-none">—</p>
+      {% endif %}
+    </div>
+    <div class="text-right">
+      <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em] mb-1">Цель</p>
+      <p class="text-lg font-semibold text-ink leading-none">
+        <span class="{% if a.direction == 'above' %}text-green-500{% else %}text-red-500{% endif %}">{{ a.dir_label }}</span>
+        {{ a.target_fmt }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  {% if a.progress_pct is not none %}
+  <div class="mt-4">
+    <div class="h-[3px] bg-line rounded-full overflow-hidden">
+      <div class="h-full rounded-full transition-all duration-500
+                  {% if a.progress_color in ('above', 'above-close') %}bg-green-400
+                  {% elif a.progress_color == 'above-reached' %}bg-green-500
+                  {% elif a.progress_color in ('below', 'below-close') %}bg-red-400
+                  {% elif a.progress_color == 'below-reached' %}bg-red-500
+                  {% else %}bg-accent{% endif %}"
+           style="width: {{ a.progress_pct }}%"></div>
+    </div>
+    <div class="flex justify-between mt-1.5">
+      <span class="text-[11px] text-faint">{{ a.progress_pct }}% к цели</span>
+      {% if a.dist_pct is not none %}
+        <span class="text-[11px] text-faint">{{ a.dist_pct }}% до таргета</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>

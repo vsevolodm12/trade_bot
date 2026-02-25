@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="pt-14 px-4 pb-4">
+  <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em] mb-1">Настройки</p>
+  <h1 class="text-2xl font-bold text-ink">Мониторинг</h1>
+</div>
+
+<div class="px-4 space-y-3" id="settings-container">
+  {% include "partials/settings_intervals.html" %}
+</div>
+
+<div class="px-4 mt-5 mb-4">
+  <a href="/logout"
+     class="block w-full py-3.5 rounded-2xl text-center text-sm font-semibold text-red-500 bg-white transition-opacity active:opacity-70">
+    Выйти
+  </a>
+</div>
+{% endblock %}

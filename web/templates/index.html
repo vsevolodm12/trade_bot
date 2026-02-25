@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="pt-14 px-4 pb-3 flex items-start justify-between">
+  <div>
+    <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em] mb-1">Мои уведомления</p>
+    <h1 class="text-2xl font-bold text-ink">
+      {% if total == 0 %}
+        Нет уведомлений
+      {% elif total == 1 %}
+        1 уведомление
+      {% elif total <= 4 %}
+        {{ total }} уведомления
+      {% else %}
+        {{ total }} уведомлений
+      {% endif %}
+    </h1>
+  </div>
+  <!-- + Добавить — верхний правый угол -->
+  <button class="flex items-center justify-center w-11 h-11 rounded-2xl bg-ink text-white mt-1 shrink-0 transition-opacity active:opacity-70"
+          hx-get="/partials/add-form"
+          hx-target="#sheet-body"
+          hx-swap="innerHTML"
+          hx-on::after-request="openSheet()"
+          aria-label="Добавить">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5"  y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+</div>
+
+<!-- Фильтры + сортировка -->
+<div class="flex items-center justify-between px-4 pb-3">
+  <!-- Pill-фильтры по рынку -->
+  <div class="flex items-center gap-2 overflow-x-auto no-scrollbar" id="market-tabs">
+    {% set tabs = [
+      ("all", "Все"),
+      ("ru",  "РФ"),
+      ("us",  "США"),
+      ("hk",  "Гонконг"),
+    ] %}
+    {% for key, label in tabs %}
+      <button
+        class="shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200
+               {% if (market | default('all')) == key %}bg-ink text-white{% else %}bg-white text-muted{% endif %}"
+        hx-get="/partials/alerts?market={{ key }}"
+        hx-target="#alerts-wrap"
+        hx-swap="innerHTML"
+        hx-on::after-request="setActiveTab('{{ key }}')"
+      >
+        {{ label }}
+      </button>
+    {% endfor %}
+  </div>
+
+  <!-- Дропдаун сортировки -->
+  <div class="relative shrink-0 ml-2" id="sort-wrap">
+    <button id="sort-btn"
+            onclick="toggleSortMenu()"
+            class="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold bg-white text-muted transition-all duration-200">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6"  x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="14" y2="12"/>
+        <line x1="3" y1="18" x2="8"  y2="18"/>
+      </svg>
+      <span id="sort-label">Сортировка</span>
+    </button>
+
+    <!-- Меню -->
+    <div id="sort-menu"
+         class="hidden absolute right-0 top-full mt-1.5 bg-white rounded-2xl overflow-hidden z-40"
+         style="min-width:180px; box-shadow:0 4px 24px rgba(0,0,0,0.12)">
+      {% set sort_options = [
+        ("default",   "По умолчанию"),
+        ("proximity", "Ближе к цели"),
+        ("newest",    "Сначала новые"),
+        ("oldest",    "Сначала старые"),
+      ] %}
+      {% for key, label in sort_options %}
+        <button onclick="applySort('{{ key }}', '{{ label }}')"
+                class="w-full flex items-center justify-between px-4 py-3 text-sm text-ink hover:bg-surface transition-colors sort-option"
+                data-sort="{{ key }}">
+          <span>{{ label }}</span>
+          <svg class="sort-check hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+        {% if not loop.last %}
+          <div class="h-px bg-line mx-4"></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+
+<!-- Список алертов — авто-обновление каждые 60с -->
+<div id="alerts-wrap"
+     hx-get="/partials/alerts?market=all"
+     hx-trigger="every 60s"
+     hx-swap="innerHTML">
+  {% include "partials/alert_list.html" %}
+</div>
+
+<script>
+  let _currentMarket = 'all';
+  let _currentSort   = 'default';
+
+  function _alertsUrl() {
+    return '/partials/alerts?market=' + _currentMarket + '&sort=' + _currentSort;
+  }
+
+  function setActiveTab(key) {
+    _currentMarket = key;
+    const tabs = document.querySelectorAll('#market-tabs button');
+    const keys = ['all', 'ru', 'us', 'hk'];
+    tabs.forEach((btn, i) => {
+      const active = keys[i] === key;
+      btn.classList.toggle('bg-ink',    active);
+      btn.classList.toggle('text-white', active);
+      btn.classList.toggle('bg-white',  !active);
+      btn.classList.toggle('text-muted', !active);
+    });
+    const wrap = document.getElementById('alerts-wrap');
+    wrap.setAttribute('hx-get', _alertsUrl());
+    htmx.process(wrap);
+  }
+
+  function toggleSortMenu() {
+    document.getElementById('sort-menu').classList.toggle('hidden');
+  }
+
+  function applySort(key, label) {
+    _currentSort = key;
+
+    // Обновляем кнопку
+    const btn = document.getElementById('sort-btn');
+    document.getElementById('sort-label').textContent = key === 'default' ? 'Сортировка' : label;
+    btn.classList.toggle('bg-ink',    key !== 'default');
+    btn.classList.toggle('text-white', key !== 'default');
+    btn.classList.toggle('bg-white',   key === 'default');
+    btn.classList.toggle('text-muted', key === 'default');
+
+    // Галочка у активного пункта
+    document.querySelectorAll('.sort-option').forEach(opt => {
+      const isActive = opt.dataset.sort === key;
+      opt.querySelector('.sort-check').classList.toggle('hidden', !isActive);
+    });
+
+    document.getElementById('sort-menu').classList.add('hidden');
+
+    const wrap = document.getElementById('alerts-wrap');
+    wrap.setAttribute('hx-get', _alertsUrl());
+    htmx.process(wrap);
+    htmx.ajax('GET', _alertsUrl(), { target: '#alerts-wrap', swap: 'innerHTML' });
+  }
+
+  // Закрывать меню при клике вне его
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('sort-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('sort-menu').classList.add('hidden');
+    }
+  });
+</script>
+{% endblock %}

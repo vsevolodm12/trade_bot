@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F7F7F7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Trade Alerts</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink:     '#2D2D2D',
+            muted:   '#6B6B6B',
+            faint:   '#ADADAD',
+            line:    '#EBEBEB',
+            surface: '#F7F7F7',
+            accent:  '#6366F1',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+      overscroll-behavior: none;
+      background: #F7F7F7;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Mobile container — max 430px centered */
+    .app-wrap { max-width: 430px; margin: 0 auto; position: relative; min-height: 100dvh; }
+
+    /* HTMX indicator */
+    .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+    .htmx-request .htmx-indicator,
+    .htmx-request.htmx-indicator { opacity: 1; }
+
+    /* Sheet slide-up */
+    #sheet {
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    #sheet.open { transform: translateY(0); }
+    #overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    #overlay.open { opacity: 1; pointer-events: auto; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+</head>
+<body>
+<div class="app-wrap">
+
+  <!-- Scrollable content -->
+  <div class="pb-32 no-scrollbar overflow-y-auto">
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- ─── Floating Pill Nav ───────────────────────────────────────────────── -->
+  <div class="fixed bottom-0 z-50 flex justify-center pointer-events-none"
+       style="left:0;right:0;max-width:430px;margin:0 auto;padding-bottom:max(env(safe-area-inset-bottom),16px)">
+    <div class="pointer-events-auto flex items-center gap-1 px-1.5 py-1.5 bg-white rounded-[28px]"
+         style="box-shadow:0 4px 32px rgba(0,0,0,0.12)">
+
+      <!-- Portfolio -->
+      <a href="/alerts"
+         hx-boost="true"
+         hx-swap="innerHTML show:top"
+         class="flex items-center justify-center w-12 h-12 rounded-[20px] transition-all duration-200
+                {% if active == 'alerts' %}bg-ink text-white{% else %}text-faint{% endif %}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" x2="18" y1="20" y2="10"/>
+          <line x1="12" x2="12" y1="20" y2="4"/>
+          <line x1="6"  x2="6"  y1="20" y2="14"/>
+        </svg>
+      </a>
+
+      <!-- Settings -->
+      <a href="/settings"
+         hx-boost="true"
+         hx-swap="innerHTML show:top"
+         class="flex items-center justify-center w-12 h-12 rounded-[20px] transition-all duration-200
+                {% if active == 'settings' %}bg-ink text-white{% else %}text-faint{% endif %}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ─── Overlay ─────────────────────────────────────────────────────────── -->
+  <div id="overlay" class="fixed inset-0 z-40 bg-black/25" onclick="closeSheet()"></div>
+
+  <!-- ─── Custom Confirm Modal ────────────────────────────────────────────── -->
+  <div id="confirm-backdrop"
+       style="display:none; position:fixed; inset:0; z-index:60; align-items:center; justify-content:center; padding:24px; background:rgba(0,0,0,0.28)">
+    <div id="confirm-box"
+         style="width:100%; max-width:300px; background:#fff; border-radius:24px; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.18); transform:scale(.94); transition:transform .2s">
+      <p id="confirm-msg"
+         style="font-size:14px; color:#2D2D2D; text-align:center; padding:20px 24px 18px; line-height:1.5"></p>
+      <div style="display:flex; border-top:1px solid #EBEBEB">
+        <button id="confirm-cancel"
+                style="flex:1; padding:14px; font-size:14px; font-weight:500; color:#6B6B6B; border-right:1px solid #EBEBEB; background:none; cursor:pointer">
+          Отмена
+        </button>
+        <button id="confirm-ok"
+                style="flex:1; padding:14px; font-size:14px; font-weight:600; color:#EF4444; background:none; cursor:pointer">
+          Удалить
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Bottom Sheet ────────────────────────────────────────────────────── -->
+  <div id="sheet" class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl"
+       style="max-width:430px;margin:0 auto;max-height:90dvh;padding-bottom:max(env(safe-area-inset-bottom),20px)">
+    <div class="flex justify-center pt-3 pb-1">
+      <div class="w-9 h-1 bg-line rounded-full"></div>
+    </div>
+    <div id="sheet-body" class="px-5 pb-4 overflow-y-auto no-scrollbar"
+         style="max-height:calc(90dvh - 40px)">
+    </div>
+  </div>
+
+</div><!-- /app-wrap -->
+
+<script>
+  function openSheet() {
+    document.getElementById('sheet').classList.add('open');
+    document.getElementById('overlay').classList.add('open');
+  }
+  function closeSheet() {
+    document.getElementById('sheet').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+    document.getElementById('sheet-body').innerHTML = '';
+  }
+  document.body.addEventListener('alertAdded', closeSheet);
+
+  (function () {
+    let startY = 0;
+    const el = document.getElementById('sheet');
+    el.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
+    el.addEventListener('touchend',   e => {
+      if (e.changedTouches[0].clientY - startY > 80) closeSheet();
+    }, { passive: true });
+  })();
+
+  // ─── Custom confirm modal (replaces browser confirm) ───────────────────────
+  (function () {
+    const backdrop = document.getElementById('confirm-backdrop');
+    const box      = document.getElementById('confirm-box');
+    const msg      = document.getElementById('confirm-msg');
+    const btnOk    = document.getElementById('confirm-ok');
+    const btnCancel= document.getElementById('confirm-cancel');
+    let _resolve   = null;
+
+    function showConfirm(question) {
+      msg.textContent = question || '';
+      backdrop.style.display = 'flex';
+      requestAnimationFrame(() => { box.style.transform = 'scale(1)'; });
+      return new Promise(res => { _resolve = res; });
+    }
+
+    function hideConfirm() {
+      box.style.transform = 'scale(.94)';
+      setTimeout(() => { backdrop.style.display = 'none'; }, 180);
+    }
+
+    btnOk.addEventListener('click',     () => { hideConfirm(); _resolve && _resolve(true);  _resolve = null; });
+    btnCancel.addEventListener('click', () => { hideConfirm(); _resolve && _resolve(false); _resolve = null; });
+    backdrop.addEventListener('click',  e => {
+      if (e.target === backdrop) { hideConfirm(); _resolve && _resolve(false); _resolve = null; }
+    });
+
+    // Перехватываем ТОЛЬКО запросы с hx-confirm (question != пусто)
+    document.body.addEventListener('htmx:confirm', function (e) {
+      if (!e.detail.question) return; // нет hx-confirm — не трогаем
+      e.preventDefault();
+      showConfirm(e.detail.question).then(ok => {
+        if (ok) e.detail.issueRequest(true);
+      });
+    });
+  })();
+</script>
+</body>
+</html>

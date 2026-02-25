@@ -1,0 +1,93 @@
+<!-- Step 2: confirm ticker + enter target price -->
+
+<div class="bg-surface rounded-2xl p-4 mb-4">
+  <div class="flex items-start justify-between">
+    <div class="min-w-0">
+      <p class="text-base font-semibold text-ink">{{ stock.company_name }}</p>
+      <div class="flex items-center gap-2 mt-1">
+        <span class="text-[11px] font-medium text-faint bg-line px-2 py-0.5 rounded-full">{{ stock.exchange }}</span>
+        <span class="text-[11px] text-faint">{{ stock.currency }}</span>
+      </div>
+    </div>
+    <!-- Переключатель валюты -->
+    <div class="flex gap-1 shrink-0 ml-2 mt-0.5">
+      <!-- Родная валюта — активна по умолчанию -->
+      <button onclick="toggleCurrency(this, '{{ price_fmt }}', '{{ price_fmt }}')"
+              class="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-ink border-ink text-white transition-all">
+        {{ stock.currency }}
+      </button>
+      {% for cur_code, cur_fmt in alt_prices.items() %}
+        <button onclick="toggleCurrency(this, '{{ cur_fmt }}', '{{ price_fmt }}')"
+                class="px-2 py-0.5 rounded-full text-[11px] font-semibold border border-line bg-white text-muted transition-all">
+          {{ cur_code }}
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+  <p id="ticker-price" class="text-2xl font-bold text-ink mt-2">{{ price_fmt }}</p>
+  <a href="{{ tv_url }}" target="_blank"
+     class="text-xs font-medium text-accent mt-1 inline-block">
+    Открыть график ↗
+  </a>
+</div>
+
+<script>
+  function toggleCurrency(btn, altFmt, origFmt) {
+    const priceEl = document.getElementById('ticker-price');
+    const allBtns = btn.closest('div').querySelectorAll('button');
+    const isActive = btn.classList.contains('bg-ink');
+
+    // Сбрасываем все кнопки
+    allBtns.forEach(b => {
+      b.classList.remove('bg-ink', 'text-white', 'border-ink');
+      b.classList.add('bg-white', 'text-muted', 'border-line');
+    });
+
+    if (isActive) {
+      priceEl.textContent = origFmt;
+    } else {
+      priceEl.textContent = altFmt;
+      btn.classList.add('bg-ink', 'text-white', 'border-ink');
+      btn.classList.remove('bg-white', 'text-muted', 'border-line');
+    }
+  }
+</script>
+
+<form hx-post="/alerts"
+      hx-target="#alerts-wrap"
+      hx-swap="innerHTML"
+      hx-encoding="application/x-www-form-urlencoded"
+      class="space-y-3">
+
+  <input type="hidden" name="ticker"        value="{{ stock.ticker }}">
+  <input type="hidden" name="company_name"  value="{{ stock.company_name }}">
+  <input type="hidden" name="exchange"      value="{{ stock.exchange }}">
+  <input type="hidden" name="current_price" value="{{ stock.price }}">
+  <input type="hidden" name="currency"      value="{{ stock.currency }}">
+
+  <div>
+    <label class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em]">
+      Целевая цена ({{ stock.currency }})
+    </label>
+    <input type="number"
+           name="target_price"
+           placeholder="{{ stock.price }}"
+           step="0.01" min="0.01" autofocus
+           style="font-family: inherit"
+           class="w-full mt-1.5 px-4 py-3 rounded-xl border border-line bg-surface text-ink text-sm outline-none focus:border-accent transition-colors">
+    <p class="text-xs text-faint mt-1.5">Текущая: {{ price_fmt }} · Укажите цену для уведомления</p>
+  </div>
+
+  <button type="submit"
+          class="w-full py-3 rounded-xl bg-ink text-white text-sm font-semibold transition-opacity active:opacity-70">
+    Добавить уведомление
+  </button>
+
+</form>
+
+<button class="w-full py-3 rounded-xl bg-surface text-muted text-sm font-medium mt-2 transition-opacity active:opacity-70"
+        hx-get="/partials/add-form"
+        hx-target="#sheet-body"
+        hx-swap="innerHTML">
+  ← Другой тикер
+</button>

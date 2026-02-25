@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F7F7F7">
+  <title>Вход</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink:     '#2D2D2D',
+            faint:   '#ADADAD',
+            line:    '#EBEBEB',
+            surface: '#F7F7F7',
+            accent:  '#6366F1',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin .75s linear infinite; }
+  </style>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body class="min-h-screen bg-surface flex items-center justify-center p-5">
+
+  <div class="w-full max-w-[360px] space-y-3">
+
+    <!-- Telegram auto-login: loading state -->
+    <div id="tg-loading" style="display:none"
+         class="bg-white rounded-3xl p-8 text-center">
+      <p class="text-sm text-faint">Входим через Telegram…</p>
+      <div class="w-7 h-7 border-2 border-line border-t-accent rounded-full spinner mx-auto mt-4"></div>
+    </div>
+
+    <!-- Telegram auth error -->
+    <div id="tg-error" style="display:none"
+         class="bg-red-50 rounded-2xl px-4 py-3">
+      <p id="tg-error-text" class="text-sm text-red-500 text-center"></p>
+    </div>
+
+    <!-- Login form -->
+    <div id="login-form-wrap" class="bg-white rounded-3xl p-8">
+      <p id="login-label" class="text-sm text-faint mb-6">Введите данные для входа</p>
+
+      <form method="post" action="/login" class="space-y-2">
+        <input
+          type="text"
+          name="username"
+          placeholder="Логин"
+          autocomplete="username"
+          autofocus
+          style="font-family: inherit"
+          class="w-full px-4 py-3 rounded-xl border border-line bg-surface text-ink text-sm outline-none focus:border-accent transition-colors"
+        >
+        <input
+          type="password"
+          name="password"
+          placeholder="Пароль"
+          autocomplete="current-password"
+          style="font-family: inherit"
+          class="w-full px-4 py-3 rounded-xl border border-line bg-surface text-ink text-sm outline-none focus:border-accent transition-colors"
+        >
+        {% if error %}
+          <p class="text-xs text-red-500 pt-1">{{ error }}</p>
+        {% endif %}
+        <button type="submit"
+                class="w-full py-3 rounded-xl bg-ink text-white text-sm font-semibold mt-1 transition-opacity active:opacity-70">
+          Войти
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (!tg || !tg.initData) return;
+
+      document.getElementById('login-form-wrap').style.display = 'none';
+      document.getElementById('tg-loading').style.display = 'block';
+      tg.ready();
+      tg.expand();
+
+      var fd = new FormData();
+      fd.append('init_data', tg.initData);
+
+      fetch('/auth/telegram', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            window.location.href = '/alerts';
+          } else {
+            _showError(data.error || 'Ошибка авторизации');
+          }
+        })
+        .catch(function () { _showError('Нет связи с сервером'); });
+
+      function _showError(msg) {
+        document.getElementById('tg-loading').style.display   = 'none';
+        document.getElementById('tg-error').style.display     = 'block';
+        document.getElementById('tg-error-text').textContent  = msg;
+        document.getElementById('login-form-wrap').style.display = 'block';
+        document.getElementById('login-label').textContent    = 'Или войдите вручную:';
+      }
+    })();
+  </script>
+
+</body>
+</html>

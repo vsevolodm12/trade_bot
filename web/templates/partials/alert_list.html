@@ -1,0 +1,55 @@
+{% if not alerts %}
+  <div class="flex flex-col items-center justify-center py-24 text-center px-8">
+    <div class="text-5xl mb-5">📭</div>
+    <h3 class="text-base font-semibold text-ink mb-1">Уведомлений нет</h3>
+    <p class="text-sm text-faint">Нажмите <span class="font-bold text-ink">+</span> в правом углу,<br>чтобы добавить первое уведомление</p>
+  </div>
+
+{% elif market != "all" and sort != "proximity" %}
+  {# На фильтрах РФ/США/Гонконг — группировка по бирже (без сортировки по близости) #}
+  {% set moex_alerts    = alerts | selectattr("exchange", "equalto", "MOEX") | list %}
+  {% set foreign_alerts = alerts | rejectattr("exchange", "equalto", "MOEX") | list %}
+
+  {% if moex_alerts %}
+    <div class="px-4 pt-5 pb-2">
+      <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em]">Московская биржа</p>
+    </div>
+    <div class="space-y-3">
+      {% for a in moex_alerts %}
+        {% set tv_url = "https://www.tradingview.com/symbols/MOEX-" ~ a.ticker ~ "/" %}
+        {% include "partials/alert_card.html" %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if foreign_alerts %}
+    <div class="px-4 pt-6 pb-2">
+      <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em]">Иностранные рынки</p>
+    </div>
+    <div class="space-y-3">
+      {% for a in foreign_alerts %}
+        {% if a.exchange in ("HKEX", "HKSE") %}
+          {% set tv_url = "https://www.tradingview.com/symbols/HKEX-" ~ a.ticker ~ "/" %}
+        {% else %}
+          {% set tv_url = "https://www.tradingview.com/symbols/" ~ a.ticker ~ "/" %}
+        {% endif %}
+        {% include "partials/alert_card.html" %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+{% else %}
+  {# Плоский список: сортировка по близости или фильтр по конкретной бирже #}
+  <div class="space-y-3 pt-3">
+    {% for a in alerts %}
+      {% if a.exchange == "MOEX" %}
+        {% set tv_url = "https://www.tradingview.com/symbols/MOEX-" ~ a.ticker ~ "/" %}
+      {% elif a.exchange in ("HKEX", "HKSE") %}
+        {% set tv_url = "https://www.tradingview.com/symbols/HKEX-" ~ a.ticker ~ "/" %}
+      {% else %}
+        {% set tv_url = "https://www.tradingview.com/symbols/" ~ a.ticker ~ "/" %}
+      {% endif %}
+      {% include "partials/alert_card.html" %}
+    {% endfor %}
+  </div>
+{% endif %}

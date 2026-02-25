@@ -1,0 +1,42 @@
+version: "3.9"
+
+# Оба сервиса собираются из одного образа.
+# SQLite-база живёт в именованном томе db_data, который монтируется в /app/data.
+# DB_PATH=/app/data/bot.db — задайте в .env
+
+services:
+
+  bot:
+    build: .
+    image: trade_bot
+    restart: unless-stopped
+    command: python -m bot.main
+    env_file: .env
+    volumes:
+      - db_data:/app/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  web:
+    build: .
+    image: trade_bot
+    restart: unless-stopped
+    command: python web_main.py
+    env_file: .env
+    volumes:
+      - db_data:/app/data
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    depends_on:
+      - bot
+
+volumes:
+  db_data:

@@ -1,0 +1,78 @@
+<!-- Валюта отображения -->
+<div class="bg-white rounded-2xl p-5">
+  <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em] mb-4">Валюта отображения</p>
+  <div class="flex gap-1 p-1 bg-surface rounded-xl">
+    {% for code, label in display_currencies.items() %}
+      <button class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200
+                     {% if s.display_currency == code %}bg-ink text-white{% else %}text-muted{% endif %}"
+              hx-post="/settings/currency/{{ code }}"
+              hx-target="#settings-container"
+              hx-swap="innerHTML">
+        {{ label }}
+      </button>
+    {% endfor %}
+  </div>
+  <p class="text-xs text-faint mt-3">Курсы Yahoo Finance · обновляются раз в час</p>
+</div>
+
+<!-- MOEX -->
+<div class="bg-white rounded-2xl p-5">
+  <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em] mb-4">Российский рынок (MOEX)</p>
+  <div class="flex gap-1 p-1 bg-surface rounded-xl">
+    {% for secs, label in ru_intervals.items() %}
+      <button class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200
+                     {% if s.interval_ru == secs %}bg-ink text-white{% else %}text-muted{% endif %}"
+              hx-post="/settings/ru/{{ secs }}"
+              hx-target="#settings-container"
+              hx-swap="innerHTML">
+        {{ label }}
+      </button>
+    {% endfor %}
+  </div>
+  <p class="text-xs text-faint mt-3">MOEX ISS · бесплатно · без лимитов</p>
+</div>
+
+<!-- US / HK -->
+<div class="bg-white rounded-2xl p-5">
+  <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em] mb-4">США и Гонконг</p>
+  <div class="flex gap-1 p-1 bg-surface rounded-xl">
+    {% for secs, label in us_intervals.items() %}
+      <button class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200
+                     {% if s.interval_us == secs %}bg-ink text-white{% else %}text-muted{% endif %}"
+              hx-post="/settings/us/{{ secs }}"
+              hx-target="#settings-container"
+              hx-swap="innerHTML">
+        {{ label }}
+      </button>
+    {% endfor %}
+  </div>
+  <p class="text-xs text-faint mt-3">Yahoo Finance · пакетный запрос · бесплатно</p>
+</div>
+
+<!-- TwelveData budget -->
+<div class="bg-white rounded-2xl p-5">
+  <p class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em] mb-4">TwelveData — бюджет</p>
+  {% if td %}
+    {% set used_pct = (td.used / td.daily_limit * 100) | round(1) %}
+    <div class="flex justify-between mb-2">
+      <span class="text-sm text-muted">Использовано</span>
+      <span class="text-sm font-semibold text-ink">{{ td.used }} / {{ td.daily_limit }}</span>
+    </div>
+    <div class="h-[3px] bg-line rounded-full overflow-hidden mb-4">
+      <div class="h-full rounded-full transition-all duration-300
+                  {% if used_pct > 85 %}bg-red-500{% elif used_pct > 60 %}bg-amber-400{% else %}bg-green-500{% endif %}"
+           style="width: {{ used_pct }}%"></div>
+    </div>
+    <div class="flex justify-between mb-1.5">
+      <span class="text-xs text-faint">Для батч-проверок</span>
+      <span class="text-xs font-semibold text-accent">{{ td.available_for_batch }} кред.</span>
+    </div>
+    <div class="flex justify-between mb-4">
+      <span class="text-xs text-faint">Резерв для новых тикеров</span>
+      <span class="text-xs text-faint">{{ td.reserve }} кред.</span>
+    </div>
+    <div class="pt-4 border-t border-line">
+      <p class="text-xs text-faint">Батч-валидация раз в ~3 ч · добавление через /quote</p>
+    </div>
+  {% endif %}
+</div>
