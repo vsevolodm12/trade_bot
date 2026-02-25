@@ -5,9 +5,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMa
 def main_menu_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         [
-            ["➕ Добавить уведомление", "📊 Мой портфель"],
-            ["🎯 Близко к цели",        "📈 Текущие цены"],
-            ["⚙️ Настройки"],
+            ["➕ Добавить уведомление"],
+            ["🎯 Близко к цели", "📈 Текущие цены"],
         ],
         resize_keyboard=True,
     )

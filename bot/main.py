@@ -40,17 +40,9 @@ from bot.handlers.move_target import (
     cancel_move,
     WAITING_NEW_TARGET,
 )
-from bot.handlers.portfolio import portfolio_handler, delete_alert_callback
+from bot.handlers.portfolio import delete_alert_callback
 from bot.handlers.prices import prices_handler
 from bot.handlers.closest import closest_handler
-from bot.handlers.settings import (
-    settings_handler,
-    settings_ru_callback,
-    settings_us_callback,
-    set_interval_ru_callback,
-    set_interval_us_callback,
-    back_to_settings_callback,
-)
 
 # ─── Логирование ─────────────────────────────────────────────────────────────
 
@@ -124,9 +116,7 @@ def build_app() -> Application:
             CommandHandler("cancel", cancel_add),
             # Нажатие кнопки главного меню завершает диалог
             MessageHandler(
-                filters.Regex(
-                    r"^(📊 Мой портфель|📈 Текущие цены|⚙️ Настройки)$"
-                ),
+                filters.Regex(r"^📈 Текущие цены$"),
                 cancel_add,
             ),
         ],
@@ -157,32 +147,15 @@ def build_app() -> Application:
 
     # Главное меню
     app.add_handler(
-        MessageHandler(filters.Regex(r"^📊 Мой портфель$"), portfolio_handler)
-    )
-    app.add_handler(
         MessageHandler(filters.Regex(r"^🎯 Близко к цели$"), closest_handler)
     )
     app.add_handler(
         MessageHandler(filters.Regex(r"^📈 Текущие цены$"), prices_handler)
     )
-    app.add_handler(
-        MessageHandler(filters.Regex(r"^⚙️ Настройки$"), settings_handler)
-    )
 
-    # Callback-кнопки
+    # Callback-кнопки (удаление алерта из уведомлений / "Близко к цели")
     app.add_handler(
         CallbackQueryHandler(delete_alert_callback, pattern=r"^delete_alert_\d+$")
-    )
-    app.add_handler(CallbackQueryHandler(settings_ru_callback, pattern="^settings_ru$"))
-    app.add_handler(CallbackQueryHandler(settings_us_callback, pattern="^settings_us$"))
-    app.add_handler(
-        CallbackQueryHandler(set_interval_ru_callback, pattern=r"^set_ru_\d+$")
-    )
-    app.add_handler(
-        CallbackQueryHandler(set_interval_us_callback, pattern=r"^set_us_\d+$")
-    )
-    app.add_handler(
-        CallbackQueryHandler(back_to_settings_callback, pattern="^back_to_settings$")
     )
 
     # ── Yahoo/MOEX: непрерывный мониторинг каждые 30 сек ───────────────────

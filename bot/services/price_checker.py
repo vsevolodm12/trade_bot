@@ -178,18 +178,19 @@ async def _send_notification(
 ) -> None:
     await db.deactivate_alert(alert["id"])
 
-    sym            = CURRENCY_SYM.get(alert["currency"], alert["currency"])
-    direction_label = (
-        "достигла цели ▲" if alert["direction"] == "above" else "достигла цели ▼"
-    )
+    sym = CURRENCY_SYM.get(alert["currency"], alert["currency"])
+
+    if alert["direction"] == "above":
+        direction_line = "▲ Цена поднялась выше целевого уровня"
+    else:
+        direction_line = "▼ Цена опустилась ниже целевого уровня"
 
     text = (
-        f"🔔 *АЛЕРТ: {alert['ticker']}*\n"
-        f"{alert['company_name']}\n\n"
-        f"Цель: *{alert['target_price']:.2f} {sym}*\n"
-        f"Факт: *{current_price:.2f} {sym}*\n\n"
-        f"Цена {direction_label}!\n"
-        f"Пора принимать решение 📊"
+        f"🔔 *{alert['ticker']}* — уведомление сработало\n"
+        f"_{alert['company_name']}_\n\n"
+        f"🎯 Цель:    `{alert['target_price']:.2f} {sym}`\n"
+        f"💰 Сейчас: `{current_price:.2f} {sym}`\n\n"
+        f"{direction_line}"
     )
 
     keyboard = alert_action_keyboard(alert["id"], alert["ticker"], alert["exchange"])
