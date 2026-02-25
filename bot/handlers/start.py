@@ -27,14 +27,19 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "📌 Выберите действие в меню ниже:"
     )
 
-    # Если WEB_URL задан — добавляем кнопку открытия Mini App
+    # Всегда показываем главное меню (Reply keyboard)
+    await update.message.reply_text(text, reply_markup=main_menu_keyboard())
+
+    # Если WEB_URL задан — отдельным сообщением inline-кнопка открытия интерфейса
     if WEB_URL:
-        webapp_keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton(
-                "📊 Открыть портфель",
-                web_app=WebAppInfo(url=WEB_URL),
-            )]
-        ])
-        await update.message.reply_text(text, reply_markup=webapp_keyboard)
-    else:
-        await update.message.reply_text(text, reply_markup=main_menu_keyboard())
+        if WEB_URL.startswith("https://"):
+            # Полноценный Telegram Mini App (требует HTTPS)
+            btn = InlineKeyboardButton("🌐 Открыть интерфейс", web_app=WebAppInfo(url=WEB_URL))
+        else:
+            # HTTP (локальная сеть / без домена) — обычная ссылка
+            btn = InlineKeyboardButton("🌐 Открыть интерфейс", url=WEB_URL)
+
+        await update.message.reply_text(
+            "📊 Веб-интерфейс:",
+            reply_markup=InlineKeyboardMarkup([[btn]]),
+        )
