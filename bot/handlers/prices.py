@@ -1,5 +1,8 @@
 """
 Показать текущие цены по всем тикерам из портфеля пользователя.
+
+Цены берём напрямую из БД — они обновляются каждые 30 сек через Yahoo/MOEX.
+Никаких API-вызовов, 0 кредитов TwelveData.
 """
 import logging
 
@@ -9,8 +12,6 @@ from telegram.ext import ContextTypes
 from bot.config import ALLOWED_USER_IDS
 from bot.database import Database
 from bot.keyboards import main_menu_keyboard
-from bot.services.moex import get_stock_price as moex_price
-from bot.services.twelvedata import get_stock_price as td_price
 
 logger = logging.getLogger(__name__)
 
@@ -34,28 +35,20 @@ async def prices_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return
 
-    # Уникальные тикеры
+    # Уникальные тикеры — берём первый алерт для каждого (там хранится последняя цена)
     seen: dict[tuple, dict] = {}
     for a in alerts:
         key = (a["ticker"], a["exchange"])
         if key not in seen:
             seen[key] = a
 
-    msg = await update.message.reply_text("⏳ Получаю актуальные цены...")
-
     lines = ["📈 *Текущие цены:*\n"]
     for (ticker, exchange), alert in seen.items():
-        if exchange == "MOEX":
-            data = await moex_price(ticker)
+        sym     = CURRENCY_SYM.get(alert["currency"], alert["currency"])
+        current = alert.get("current_price")
+        if current:
+            lines.append(f"• *{ticker}* ({exchange}): `{current:.2f} {sym}`")
         else:
-            data = await td_price(ticker)
+            lines.append(f"• *{ticker}* ({exchange}): нет данных")
 
-        sym = CURRENCY_SYM.get(alert["currency"], alert["currency"])
-        if data:
-            lines.append(
-                f"• *{ticker}* ({exchange}): `{data['price']:.2f} {sym}`"
-            )
-        else:
-            lines.append(f"• *{ticker}* ({exchange}): ❌ нет данных")
-
-    await msg.edit_text("\n".join(lines), parse_mode="Markdown")
+    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
