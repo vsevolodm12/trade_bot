@@ -487,35 +487,47 @@ async def search_ticker(
 @app.post("/alerts", response_class=HTMLResponse)
 async def add_alert(
     request: Request,
-    ticker:        str   = Form(...),
-    company_name:  str   = Form(...),
-    exchange:      str   = Form(...),
-    current_price: float = Form(...),
-    currency:      str   = Form(...),
-    target_price:  float = Form(...),
+    ticker:        str            = Form(...),
+    company_name:  str            = Form(...),
+    exchange:      str            = Form(...),
+    current_price: float          = Form(...),
+    currency:      str            = Form(...),
+    target_above:  Optional[float] = Form(None),
+    target_below:  Optional[float] = Form(None),
     session: Optional[str] = Cookie(None),
 ):
     if not is_authenticated(session):
         return HTMLResponse("", status_code=401)
 
-    if target_price <= 0:
+    if not target_above and not target_below:
         return HTMLResponse(
-            '<p style="color:var(--danger);padding:8px">Некорректная цена</p>'
+            '<p style="color:var(--danger);padding:8px">Заполните хотя бы одно поле</p>'
         )
 
-    direction = "above" if target_price >= current_price else "below"
-
     # Уведомления пойдут PRIMARY_USER_ID (первый из ALLOWED_USER_IDS в .env)
-    await db.add_alert(
-        user_id=PRIMARY_USER_ID,
-        ticker=ticker,
-        exchange=exchange,
-        company_name=company_name,
-        target_price=target_price,
-        currency=currency,
-        direction=direction,
-        current_price=current_price,
-    )
+    if target_above and target_above > 0:
+        await db.add_alert(
+            user_id=PRIMARY_USER_ID,
+            ticker=ticker,
+            exchange=exchange,
+            company_name=company_name,
+            target_price=target_above,
+            currency=currency,
+            direction="above",
+            current_price=current_price,
+        )
+
+    if target_below and target_below > 0:
+        await db.add_alert(
+            user_id=PRIMARY_USER_ID,
+            ticker=ticker,
+            exchange=exchange,
+            company_name=company_name,
+            target_price=target_below,
+            currency=currency,
+            direction="below",
+            current_price=current_price,
+        )
 
     s        = await db.get_user_settings(PRIMARY_USER_ID)
     disp_cur = s.get("display_currency", "original")

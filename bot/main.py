@@ -29,10 +29,14 @@ from bot.handlers.start import start_handler
 from bot.handlers.add_alert import (
     add_alert_entry,
     ticker_received,
+    direction_received,
     target_received,
+    target_second_received,
     cancel_add,
     WAITING_TICKER,
+    WAITING_DIRECTION,
     WAITING_TARGET,
+    WAITING_TARGET_SECOND,
 )
 from bot.handlers.move_target import (
     move_target_entry,
@@ -107,9 +111,17 @@ def build_app() -> Application:
                 CallbackQueryHandler(cancel_add, pattern="^cancel$"),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, ticker_received),
             ],
+            WAITING_DIRECTION: [
+                CallbackQueryHandler(direction_received, pattern="^dir_(above|below|both)$"),
+                CallbackQueryHandler(cancel_add, pattern="^cancel$"),
+            ],
             WAITING_TARGET: [
                 CallbackQueryHandler(cancel_add, pattern="^cancel$"),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, target_received),
+            ],
+            WAITING_TARGET_SECOND: [
+                CallbackQueryHandler(cancel_add, pattern="^cancel$"),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, target_second_received),
             ],
         },
         fallbacks=[

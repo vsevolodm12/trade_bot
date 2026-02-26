@@ -1,4 +1,4 @@
-<!-- Step 2: confirm ticker + enter target price -->
+<!-- Step 2: confirm ticker + enter target prices -->
 
 <div class="bg-surface rounded-2xl p-4 mb-4">
   <div class="flex items-start justify-between">
@@ -37,7 +37,6 @@
     const allBtns = btn.closest('div').querySelectorAll('button');
     const isActive = btn.classList.contains('bg-ink');
 
-    // Сбрасываем все кнопки
     allBtns.forEach(b => {
       b.classList.remove('bg-ink', 'text-white', 'border-ink');
       b.classList.add('bg-white', 'text-muted', 'border-line');
@@ -51,12 +50,23 @@
       btn.classList.remove('bg-white', 'text-muted', 'border-line');
     }
   }
+
+  function validateAlertForm(form) {
+    const above = form.querySelector('[name=target_above]').value.trim();
+    const below = form.querySelector('[name=target_below]').value.trim();
+    if (!above && !below) {
+      alert('Заполните хотя бы одно поле — цель роста или цель падения');
+      return false;
+    }
+    return true;
+  }
 </script>
 
 <form hx-post="/alerts"
       hx-target="#alerts-wrap"
       hx-swap="innerHTML"
       hx-encoding="application/x-www-form-urlencoded"
+      onsubmit="return validateAlertForm(this)"
       class="space-y-3">
 
   <input type="hidden" name="ticker"        value="{{ stock.ticker }}">
@@ -65,18 +75,33 @@
   <input type="hidden" name="current_price" value="{{ stock.price }}">
   <input type="hidden" name="currency"      value="{{ stock.currency }}">
 
+  <!-- Цель роста -->
   <div>
     <label class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em]">
-      Целевая цена ({{ stock.currency }})
+      ▲ Цель роста ({{ stock.currency }})
     </label>
     <input type="number"
-           name="target_price"
-           placeholder="{{ stock.price }}"
+           name="target_above"
+           placeholder="Цена для уведомления при росте"
            step="0.01" min="0.01" autofocus
            style="font-family: inherit"
-           class="w-full mt-1.5 px-4 py-3 rounded-xl border border-line bg-surface text-ink text-sm outline-none focus:border-accent transition-colors">
-    <p class="text-xs text-faint mt-1.5">Текущая: {{ price_fmt }} · Укажите цену для уведомления</p>
+           class="w-full mt-1.5 px-4 py-3 rounded-xl border border-line bg-surface text-ink text-sm outline-none focus:border-green-500 transition-colors">
   </div>
+
+  <!-- Цель падения -->
+  <div>
+    <label class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em]">
+      ▼ Цель падения ({{ stock.currency }})
+    </label>
+    <input type="number"
+           name="target_below"
+           placeholder="Цена для уведомления при падении"
+           step="0.01" min="0.01"
+           style="font-family: inherit"
+           class="w-full mt-1.5 px-4 py-3 rounded-xl border border-line bg-surface text-ink text-sm outline-none focus:border-red-500 transition-colors">
+  </div>
+
+  <p class="text-xs text-faint">Текущая: {{ price_fmt }} · Заполните одно или оба поля</p>
 
   <button type="submit"
           class="w-full py-3 rounded-xl bg-ink text-white text-sm font-semibold transition-opacity active:opacity-70">
