@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1">
   <meta name="theme-color" content="#F7F7F7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -34,6 +34,9 @@
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* iOS: prevent auto-zoom on input focus (requires font-size >= 16px) */
+    input, select, textarea { font-size: 16px; }
 
     /* Mobile container — max 430px centered */
     .app-wrap { max-width: 430px; margin: 0 auto; position: relative; min-height: 100dvh; }
@@ -147,11 +150,16 @@
   document.body.addEventListener('alertAdded', closeSheet);
 
   (function () {
-    let startY = 0;
+    let startY = null;
     const el = document.getElementById('sheet');
-    el.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
-    el.addEventListener('touchend',   e => {
+    el.addEventListener('touchstart', e => {
+      if (e.touches.length > 1) { startY = null; return; } // ignore multitouch / pinch
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    el.addEventListener('touchend', e => {
+      if (startY === null) return; // was multitouch — ignore
       if (e.changedTouches[0].clientY - startY > 80) closeSheet();
+      startY = null;
     }, { passive: true });
   })();
 

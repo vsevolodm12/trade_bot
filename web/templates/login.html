@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1">
   <meta name="theme-color" content="#F7F7F7">
   <title>Вход</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -25,6 +25,7 @@
     body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { animation: spin .75s linear infinite; }
+    input { font-size: 16px; } /* iOS: prevent auto-zoom on focus */
   </style>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -84,6 +85,8 @@
       var tg = window.Telegram && window.Telegram.WebApp;
       if (!tg || !tg.initData) return;
 
+      // В контексте Mini App — скрываем форму логина насовсем.
+      // Доступ только через Telegram ID, без пароля.
       document.getElementById('login-form-wrap').style.display = 'none';
       document.getElementById('tg-loading').style.display = 'block';
       tg.ready();
@@ -93,22 +96,23 @@
       fd.append('init_data', tg.initData);
 
       fetch('/auth/telegram', { method: 'POST', body: fd })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (data.ok) {
+        .then(function (r) {
+          return r.json().then(function (data) { return { data: data, status: r.status }; });
+        })
+        .then(function (res) {
+          if (res.data.ok) {
             window.location.href = '/alerts';
           } else {
-            _showError(data.error || 'Ошибка авторизации');
+            _showError(res.data.error || 'Ошибка авторизации Telegram');
           }
         })
         .catch(function () { _showError('Нет связи с сервером'); });
 
       function _showError(msg) {
-        document.getElementById('tg-loading').style.display   = 'none';
-        document.getElementById('tg-error').style.display     = 'block';
-        document.getElementById('tg-error-text').textContent  = msg;
-        document.getElementById('login-form-wrap').style.display = 'block';
-        document.getElementById('login-label').textContent    = 'Или войдите вручную:';
+        document.getElementById('tg-loading').style.display  = 'none';
+        document.getElementById('tg-error').style.display    = 'block';
+        document.getElementById('tg-error-text').textContent = msg;
+        // Форму логина/пароля НЕ показываем в Mini App — только Telegram ID
       }
     })();
   </script>

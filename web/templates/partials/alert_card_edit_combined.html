@@ -1,0 +1,60 @@
+<div class="bg-white rounded-2xl mx-4 p-5" id="card-{{ a.id_above }}-{{ a.id_below }}">
+
+  <div class="flex items-center gap-2 mb-1">
+    <span class="text-base font-bold text-ink">{{ a.ticker }}</span>
+    <span class="text-[11px] font-medium text-faint bg-surface px-2 py-0.5 rounded-full">{{ a.exchange }}</span>
+  </div>
+  <p class="text-sm text-faint mb-3 truncate">{{ a.company_name }}</p>
+
+  {% if a.current_price %}
+    <p class="text-sm text-faint mb-4">
+      Сейчас: <span class="text-ink font-semibold">{{ a.current_fmt }}</span>
+    </p>
+  {% endif %}
+
+  <form hx-put="/alerts/combined/{{ a.id_above }}/{{ a.id_below }}/targets"
+        hx-target="#card-{{ a.id_above }}-{{ a.id_below }}"
+        hx-swap="outerHTML"
+        hx-encoding="application/x-www-form-urlencoded"
+        class="space-y-3">
+
+    <div>
+      <label class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em]">
+        ▲ Цель роста ({{ a.currency }})
+      </label>
+      <input type="number"
+             name="target_above"
+             value="{{ a.target_above_price }}"
+             step="0.01" min="0.01" autofocus
+             style="font-family: inherit"
+             class="w-full mt-1.5 px-4 py-3 rounded-xl border border-line bg-surface text-ink text-sm outline-none focus:border-green-500 transition-colors">
+    </div>
+
+    <div>
+      <label class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em]">
+        ▼ Цель падения ({{ a.currency }})
+      </label>
+      <input type="number"
+             name="target_below"
+             value="{{ a.target_below_price }}"
+             step="0.01" min="0.01"
+             style="font-family: inherit"
+             class="w-full mt-1.5 px-4 py-3 rounded-xl border border-line bg-surface text-ink text-sm outline-none focus:border-red-500 transition-colors">
+    </div>
+
+    <div class="flex gap-2">
+      <button type="submit"
+              class="flex-1 py-3 rounded-xl bg-ink text-white text-sm font-semibold transition-opacity active:opacity-70">
+        Сохранить
+      </button>
+      <button type="button"
+              class="flex-1 py-3 rounded-xl bg-surface text-ink text-sm font-semibold transition-opacity active:opacity-70"
+              hx-get="/partials/alerts/combined/{{ a.id_above }}/{{ a.id_below }}"
+              hx-target="#card-{{ a.id_above }}-{{ a.id_below }}"
+              hx-swap="outerHTML">
+        Отмена
+      </button>
+    </div>
+
+  </form>
+</div>

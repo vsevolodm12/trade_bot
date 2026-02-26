@@ -275,6 +275,60 @@ def _enrich_one(alert: dict, display_currency: str = "original", rates: dict | N
     return _enrich([alert], display_currency, rates)[0]
 
 
+def _group_alerts_for_display(enriched: list[dict]) -> list[dict]:
+    """
+    Группирует обогащённые алерты по тикеру.
+    Если у тикера есть и 'above', и 'below' — объединяет их в одну combined-карточку.
+    Лишние алерты (третий и далее с тем же тикером) добавляются как отдельные карточки.
+    Порядок определяется первым вхождением тикера.
+    """
+    ticker_order: list[str] = []
+    ticker_groups: dict[str, list[dict]] = {}
+    for a in enriched:
+        t = a["ticker"]
+        if t not in ticker_groups:
+            ticker_groups[t] = []
+            ticker_order.append(t)
+        ticker_groups[t].append(a)
+
+    result: list[dict] = []
+    for ticker in ticker_order:
+        group = ticker_groups[ticker]
+        above = next((a for a in group if a["direction"] == "above"), None)
+        below = next((a for a in group if a["direction"] == "below"), None)
+
+        if above and below:
+            dist_vals = [x for x in [above.get("dist_pct"), below.get("dist_pct")] if x is not None]
+            combined = {
+                **above,
+                "is_combined":          True,
+                "id_above":             above["id"],
+                "id_below":             below["id"],
+                "target_above_fmt":     above["target_fmt"],
+                "target_above_price":   above["target_price"],
+                "progress_above_pct":   above["progress_pct"],
+                "dist_above_pct":       above["dist_pct"],
+                "progress_above_color": above["progress_color"],
+                "target_below_fmt":     below["target_fmt"],
+                "target_below_price":   below["target_price"],
+                "progress_below_pct":   below["progress_pct"],
+                "dist_below_pct":       below["dist_pct"],
+                "progress_below_color": below["progress_color"],
+                # Для сортировки по близости — берём минимальное расстояние
+                "dist_pct": min(dist_vals) if dist_vals else None,
+            }
+            result.append(combined)
+            # Добавляем лишние алерты того же тикера (если вдруг есть больше 2)
+            for a in group:
+                if a["id"] not in (above["id"], below["id"]):
+                    result.append({**a, "is_combined": False})
+        else:
+            for a in group:
+                result.append({**a, "is_combined": False})
+
+    return result
+
+
 def _tradingview_url(ticker: str, exchange: str) -> str:
     if exchange == "MOEX":
         return f"https://www.tradingview.com/symbols/MOEX-{ticker}/"
@@ -384,11 +438,12 @@ async def alerts_page(request: Request, session: Optional[str] = Cookie(None)):
     rates    = await get_rates() if disp_cur != "original" else {}
     alerts   = await _all_alerts()
     enriched = _enrich(alerts, disp_cur, rates)
+    grouped  = _group_alerts_for_display(enriched)
 
     return templates.TemplateResponse("index.html", {
         "request":        request,
-        "alerts":         enriched,
-        "total":          len(alerts),
+        "alerts":         grouped,
+        "total":          len(grouped),
         "active":         "alerts",
         "market":         "all",
         "display_currency": disp_cur,
@@ -410,17 +465,18 @@ async def alerts_partial(
     rates    = await get_rates() if disp_cur != "original" else {}
     alerts   = await _all_alerts()
     enriched = _apply_filter(_enrich(alerts, disp_cur, rates), market)
+    grouped  = _group_alerts_for_display(enriched)
 
     if sort == "proximity":
-        enriched.sort(key=lambda a: a["dist_pct"] if a["dist_pct"] is not None else 9999)
+        grouped.sort(key=lambda a: a["dist_pct"] if a["dist_pct"] is not None else 9999)
     elif sort == "newest":
-        enriched.sort(key=lambda a: a.get("created_at") or "", reverse=True)
+        grouped.sort(key=lambda a: a.get("created_at") or "", reverse=True)
     elif sort == "oldest":
-        enriched.sort(key=lambda a: a.get("created_at") or "")
+        grouped.sort(key=lambda a: a.get("created_at") or "")
 
     return templates.TemplateResponse("partials/alert_list.html", {
         "request": request,
-        "alerts":  enriched,
+        "alerts":  grouped,
         "market":  market,
         "sort":    sort,
     })
@@ -534,10 +590,11 @@ async def add_alert(
     rates    = await get_rates() if disp_cur != "original" else {}
     alerts   = await _all_alerts()
     enriched = _enrich(alerts, disp_cur, rates)
+    grouped  = _group_alerts_for_display(enriched)
 
     resp = templates.TemplateResponse(
         "partials/alert_list.html",
-        {"request": request, "alerts": enriched},
+        {"request": request, "alerts": grouped, "market": "all", "sort": "default"},
     )
     resp.headers["HX-Trigger"] = "alertAdded"
     return resp
@@ -631,6 +688,111 @@ async def upload_excel(
 
 # ─── Delete / Edit ───────────────────────────────────────────────────────────
 
+@app.delete("/alerts/combined/{id_above}/{id_below}", response_class=HTMLResponse)
+async def delete_combined_alert(
+    id_above: int,
+    id_below: int,
+    session: Optional[str] = Cookie(None),
+):
+    """Удаляет оба алерта (above + below) одной кнопкой из combined-карточки."""
+    if not is_authenticated(session):
+        return HTMLResponse("", status_code=401)
+    async with __import__("aiosqlite").connect(db.db_path) as conn:
+        await conn.execute("DELETE FROM alerts WHERE id IN (?, ?)", (id_above, id_below))
+        await conn.commit()
+    return HTMLResponse("")
+
+
+@app.get("/partials/alerts/combined/{id_above}/{id_below}", response_class=HTMLResponse)
+async def combined_card_partial(
+    request: Request,
+    id_above: int,
+    id_below: int,
+    session: Optional[str] = Cookie(None),
+):
+    """Возвращает combined-карточку в режиме просмотра (после отмены редактирования)."""
+    if not is_authenticated(session):
+        return HTMLResponse("")
+    alert_above = await db.get_alert_by_id(id_above)
+    alert_below = await db.get_alert_by_id(id_below)
+    if not alert_above or not alert_below:
+        return HTMLResponse("")
+    s        = await db.get_user_settings(PRIMARY_USER_ID)
+    disp_cur = s.get("display_currency", "original")
+    rates    = await get_rates() if disp_cur != "original" else {}
+    enriched = _enrich([alert_above, alert_below], disp_cur, rates)
+    grouped  = _group_alerts_for_display(enriched)
+    if not grouped or not grouped[0].get("is_combined"):
+        return HTMLResponse("")
+    return templates.TemplateResponse("partials/alert_card.html", {
+        "request": request,
+        "a":       grouped[0],
+        "tv_url":  _tradingview_url(alert_above["ticker"], alert_above["exchange"]),
+    })
+
+
+@app.get("/partials/alerts/combined/{id_above}/{id_below}/edit", response_class=HTMLResponse)
+async def combined_card_edit(
+    request: Request,
+    id_above: int,
+    id_below: int,
+    session: Optional[str] = Cookie(None),
+):
+    """Возвращает combined-карточку в режиме редактирования."""
+    if not is_authenticated(session):
+        return HTMLResponse("")
+    alert_above = await db.get_alert_by_id(id_above)
+    alert_below = await db.get_alert_by_id(id_below)
+    if not alert_above or not alert_below:
+        return HTMLResponse("")
+    s        = await db.get_user_settings(PRIMARY_USER_ID)
+    disp_cur = s.get("display_currency", "original")
+    rates    = await get_rates() if disp_cur != "original" else {}
+    enriched = _enrich([alert_above, alert_below], disp_cur, rates)
+    grouped  = _group_alerts_for_display(enriched)
+    if not grouped or not grouped[0].get("is_combined"):
+        return HTMLResponse("")
+    return templates.TemplateResponse("partials/alert_card_edit_combined.html", {
+        "request": request,
+        "a":       grouped[0],
+    })
+
+
+@app.put("/alerts/combined/{id_above}/{id_below}/targets", response_class=HTMLResponse)
+async def update_combined_targets(
+    request:      Request,
+    id_above:     int,
+    id_below:     int,
+    target_above: float = Form(...),
+    target_below: float = Form(...),
+    session: Optional[str] = Cookie(None),
+):
+    """Обновляет обе целевые цены combined-алерта."""
+    if not is_authenticated(session):
+        return HTMLResponse("", status_code=401)
+    alert_above = await db.get_alert_by_id(id_above)
+    alert_below = await db.get_alert_by_id(id_below)
+    if not alert_above or not alert_below:
+        return HTMLResponse("", status_code=404)
+    current = alert_above.get("current_price") or alert_above["target_price"]
+    await db.update_alert_target(id_above, alert_above["user_id"], target_above, "above", current)
+    await db.update_alert_target(id_below, alert_below["user_id"], target_below, "below", current)
+    upd_above = await db.get_alert_by_id(id_above)
+    upd_below = await db.get_alert_by_id(id_below)
+    s        = await db.get_user_settings(PRIMARY_USER_ID)
+    disp_cur = s.get("display_currency", "original")
+    rates    = await get_rates() if disp_cur != "original" else {}
+    enriched = _enrich([upd_above, upd_below], disp_cur, rates)
+    grouped  = _group_alerts_for_display(enriched)
+    if not grouped or not grouped[0].get("is_combined"):
+        return HTMLResponse("")
+    return templates.TemplateResponse("partials/alert_card.html", {
+        "request": request,
+        "a":       grouped[0],
+        "tv_url":  _tradingview_url(upd_above["ticker"], upd_above["exchange"]),
+    })
+
+
 @app.delete("/alerts/{alert_id}", response_class=HTMLResponse)
 async def delete_alert(
     alert_id: int,
@@ -664,7 +826,7 @@ async def alert_card_partial(
     enriched = _enrich_one(alert, disp_cur, rates)
     return templates.TemplateResponse("partials/alert_card.html", {
         "request": request,
-        "a":       enriched,
+        "a":       {**enriched, "is_combined": False},
         "tv_url":  _tradingview_url(alert["ticker"], alert["exchange"]),
     })
 
@@ -718,7 +880,7 @@ async def update_target(
 
     return templates.TemplateResponse("partials/alert_card.html", {
         "request": request,
-        "a":       enriched,
+        "a":       {**enriched, "is_combined": False},
         "tv_url":  _tradingview_url(updated["ticker"], updated["exchange"]),
     })
 
@@ -815,10 +977,13 @@ async def switch_currency(
     rates    = await get_rates() if code != "original" else {}
     alerts   = await _all_alerts()
     enriched = _apply_filter(_enrich(alerts, code, rates), market)
+    grouped  = _group_alerts_for_display(enriched)
 
     resp = templates.TemplateResponse("partials/alert_list.html", {
         "request": request,
-        "alerts":  enriched,
+        "alerts":  grouped,
+        "market":  market,
+        "sort":    "default",
     })
     resp.headers["HX-Trigger"] = f"currencyChanged:{code}"
     return resp
