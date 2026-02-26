@@ -632,44 +632,66 @@ async def upload_excel(
             {"request": request, "error": "Файл пустой"},
         )
 
-    # Пропускаем первую строку если это заголовок (не число во второй колонке)
+    def _to_float(raw) -> Optional[float]:
+        """Преобразует строку/число из ячейки в float или None."""
+        if raw is None:
+            return None
+        s = str(raw).replace(",", ".").strip()
+        if not s:
+            return None
+        try:
+            v = float(s)
+            return v if v > 0 else None
+        except ValueError:
+            return None
+
+    # Пропускаем первую строку если ни B, ни C не числа (это заголовок)
     start = 0
-    first_b = rows[0][1] if len(rows[0]) > 1 else None
-    if first_b is None or not str(first_b).replace(".", "").replace(",", "").isdigit():
+    first_b = _to_float(rows[0][1] if len(rows[0]) > 1 else None)
+    first_c = _to_float(rows[0][2] if len(rows[0]) > 2 else None)
+    if first_b is None and first_c is None:
         start = 1
 
     added, skipped = [], []
     for row in rows[start:]:
-        if len(row) < 2:
-            continue
         raw_ticker = str(row[0]).strip().upper() if row[0] else ""
-        raw_price  = str(row[1]).replace(",", ".").strip() if row[1] else ""
+        if not raw_ticker:
+            continue
 
-        if not raw_ticker or not raw_price:
-            continue
-        try:
-            target_price = float(raw_price)
-        except ValueError:
-            skipped.append(f"{raw_ticker} — неверная цена")
-            continue
+        target_above = _to_float(row[1] if len(row) > 1 else None)
+        target_below = _to_float(row[2] if len(row) > 2 else None)
+
+        if target_above is None and target_below is None:
+            continue  # строка без цен — пропускаем
 
         stock = await _search_stock(raw_ticker)
         if not stock:
             skipped.append(f"{raw_ticker} — не найден")
             continue
 
-        direction = "above" if target_price >= stock["price"] else "below"
         try:
-            await db.add_alert(
-                user_id=PRIMARY_USER_ID,
-                ticker=stock["ticker"],
-                exchange=stock["exchange"],
-                company_name=stock["company_name"],
-                target_price=target_price,
-                currency=stock["currency"],
-                direction=direction,
-                current_price=stock["price"],
-            )
+            if target_above:
+                await db.add_alert(
+                    user_id=PRIMARY_USER_ID,
+                    ticker=stock["ticker"],
+                    exchange=stock["exchange"],
+                    company_name=stock["company_name"],
+                    target_price=target_above,
+                    currency=stock["currency"],
+                    direction="above",
+                    current_price=stock["price"],
+                )
+            if target_below:
+                await db.add_alert(
+                    user_id=PRIMARY_USER_ID,
+                    ticker=stock["ticker"],
+                    exchange=stock["exchange"],
+                    company_name=stock["company_name"],
+                    target_price=target_below,
+                    currency=stock["currency"],
+                    direction="below",
+                    current_price=stock["price"],
+                )
             added.append(stock["ticker"])
         except Exception as e:
             skipped.append(f"{raw_ticker} — ошибка БД")

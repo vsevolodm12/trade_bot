@@ -46,14 +46,12 @@
     .htmx-request .htmx-indicator,
     .htmx-request.htmx-indicator { opacity: 1; }
 
-    /* Sheet slide-up */
+    /* Full-screen add panel — slides in from right */
     #sheet {
-      transform: translateY(100%);
-      transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
     }
-    #sheet.open { transform: translateY(0); }
-    #overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-    #overlay.open { opacity: 1; pointer-events: auto; }
+    #sheet.open { transform: translateX(0); }
 
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
@@ -101,9 +99,6 @@
     </div>
   </div>
 
-  <!-- ─── Overlay ─────────────────────────────────────────────────────────── -->
-  <div id="overlay" class="fixed inset-0 z-40 bg-black/25" onclick="closeSheet()"></div>
-
   <!-- ─── Custom Confirm Modal ────────────────────────────────────────────── -->
   <div id="confirm-backdrop"
        style="display:none; position:fixed; inset:0; z-index:60; align-items:center; justify-content:center; padding:24px; background:rgba(0,0,0,0.28)">
@@ -124,14 +119,24 @@
     </div>
   </div>
 
-  <!-- ─── Bottom Sheet ────────────────────────────────────────────────────── -->
-  <div id="sheet" class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl"
-       style="max-width:430px;margin:0 auto;max-height:90dvh;padding-bottom:max(env(safe-area-inset-bottom),20px)">
-    <div class="flex justify-center pt-3 pb-1">
-      <div class="w-9 h-1 bg-line rounded-full"></div>
+  <!-- ─── Full-screen Add Panel ───────────────────────────────────────────── -->
+  <div id="sheet" class="fixed inset-0 z-50 bg-surface flex flex-col"
+       style="max-width:430px; margin:0 auto;">
+    <!-- iOS-style nav header -->
+    <div class="flex items-center gap-3 px-3 bg-surface border-b border-line shrink-0"
+         style="padding-top:max(env(safe-area-inset-top),52px); padding-bottom:12px">
+      <button onclick="closeSheet()"
+              class="flex items-center gap-0.5 px-1 py-1 text-accent text-[15px] font-medium active:opacity-50 transition-opacity">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Назад
+      </button>
+      <span class="text-[15px] font-semibold text-ink">Добавить</span>
     </div>
-    <div id="sheet-body" class="px-5 pb-4 overflow-y-auto no-scrollbar"
-         style="max-height:calc(90dvh - 40px)">
+    <!-- Scrollable body -->
+    <div id="sheet-body" class="flex-1 overflow-y-auto no-scrollbar px-4 pt-5"
+         style="padding-bottom:max(env(safe-area-inset-bottom),32px)">
     </div>
   </div>
 
@@ -140,28 +145,12 @@
 <script>
   function openSheet() {
     document.getElementById('sheet').classList.add('open');
-    document.getElementById('overlay').classList.add('open');
   }
   function closeSheet() {
     document.getElementById('sheet').classList.remove('open');
-    document.getElementById('overlay').classList.remove('open');
     document.getElementById('sheet-body').innerHTML = '';
   }
   document.body.addEventListener('alertAdded', closeSheet);
-
-  (function () {
-    let startY = null;
-    const el = document.getElementById('sheet');
-    el.addEventListener('touchstart', e => {
-      if (e.touches.length > 1) { startY = null; return; } // ignore multitouch / pinch
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-    el.addEventListener('touchend', e => {
-      if (startY === null) return; // was multitouch — ignore
-      if (e.changedTouches[0].clientY - startY > 80) closeSheet();
-      startY = null;
-    }, { passive: true });
-  })();
 
   // ─── Custom confirm modal (replaces browser confirm) ───────────────────────
   (function () {
