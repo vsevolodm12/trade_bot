@@ -1,5 +1,5 @@
 <!-- Inline nav header -->
-<div class="flex items-center mb-8">
+<div class="flex items-center" style="margin-bottom:0; padding-bottom:0">
   <button onclick="closeSheet()"
           class="flex items-center gap-0.5 text-accent text-[15px] font-medium active:opacity-50 transition-opacity">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -11,10 +11,9 @@
   <div style="width:60px"></div>
 </div>
 
-<!-- Search section (pushed toward center) -->
-<div class="mt-10">
+<!-- Search section — вертикально центрирована -->
+<div style="min-height:60vh; display:flex; flex-direction:column; justify-content:center; gap:0; padding:16px 0 24px">
 
-  <!-- Поиск по тикеру -->
   <form hx-post="/partials/search"
         hx-target="#ticker-result"
         hx-swap="innerHTML"
@@ -29,7 +28,7 @@
            spellcheck="false"
            autofocus
            style="font-family: inherit"
-           class="w-full px-4 py-3 rounded-xl border border-line bg-surface text-ink text-sm outline-none focus:border-accent transition-colors">
+           class="w-full px-4 py-3 rounded-xl border border-line bg-white text-ink text-sm outline-none focus:border-accent transition-colors">
 
     <button type="submit"
             class="w-full py-3 rounded-xl bg-ink text-white text-sm font-semibold transition-opacity active:opacity-70">
@@ -38,36 +37,49 @@
 
   </form>
 
-  <!-- Spinner + результат поиска — прямо под формой -->
+  <!-- Результат поиска — прямо под кнопкой -->
   <div id="search-spinner" class="htmx-indicator flex justify-center py-4">
     <div class="w-6 h-6 border-2 border-line border-t-accent rounded-full"
          style="animation: spin .75s linear infinite"></div>
   </div>
 
-  <div id="ticker-result" class="mt-3"></div>
+  <div id="ticker-result"></div>
 
 </div>
 
 <!-- Разделитель -->
-<div class="flex items-center gap-3 my-6">
+<div class="flex items-center gap-3" style="margin: 0 0 20px">
   <div class="flex-1 h-px bg-line"></div>
   <span class="text-xs text-faint">или</span>
   <div class="flex-1 h-px bg-line"></div>
 </div>
 
-<!-- Загрузка из Excel -->
-<div>
+<!-- Excel секция -->
+<div class="flex items-center gap-2" style="margin-bottom: max(env(safe-area-inset-bottom), 32px)">
+
   <label for="excel-file"
-         class="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-surface text-ink text-sm font-semibold cursor-pointer transition-opacity active:opacity-70">
+         class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-surface text-ink text-sm font-semibold cursor-pointer transition-opacity active:opacity-70">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
       <line x1="16" y1="13" x2="8" y2="13"/>
     </svg>
-    Загрузить список из Excel
+    Загрузить из Excel
   </label>
 
-  <!-- Скрытый инпут — при выборе файла HTMX автоматически сабмитит форму -->
+  <!-- Кнопка ? -->
+  <button type="button"
+          onclick="document.getElementById('excel-info-modal').style.display='flex'"
+          class="flex items-center justify-center rounded-xl bg-surface text-faint text-sm font-semibold transition-opacity active:opacity-50"
+          style="width:46px; height:46px; flex-shrink:0">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  </button>
+
+  <!-- Скрытый файловый инпут -->
   <form id="excel-form"
         hx-post="/upload/excel"
         hx-target="#sheet-body"
@@ -82,11 +94,6 @@
            onchange="htmx.trigger('#excel-form', 'submit')">
   </form>
 
-  <div class="mt-3 space-y-1">
-    <p class="text-xs text-faint text-center font-medium">Формат файла:</p>
-    <p class="text-xs text-faint text-center">A — тикер &nbsp;·&nbsp; B — цель роста ▲ &nbsp;·&nbsp; C — цель падения ▼</p>
-    <p class="text-xs text-faint text-center">Колонки B и C можно заполнять по одной или обе сразу</p>
-  </div>
 </div>
 
 <!-- Excel спиннер -->
@@ -94,4 +101,88 @@
   <div class="w-6 h-6 border-2 border-line border-t-accent rounded-full"
        style="animation: spin .75s linear infinite"></div>
   <p class="text-xs text-faint">Ищем акции и добавляем алерты…</p>
+</div>
+
+<!-- ─── Модальное окно: формат Excel ──────────────────────────────────────── -->
+<div id="excel-info-modal"
+     onclick="if(event.target===this) this.style.display='none'"
+     style="display:none; position:fixed; inset:0; z-index:80; align-items:flex-end; justify-content:center; background:rgba(0,0,0,0.32)">
+
+  <div style="width:100%; max-width:430px; background:#fff; border-radius:24px 24px 0 0; padding:12px 20px 0; box-shadow:0 -4px 32px rgba(0,0,0,0.12)">
+
+    <!-- Drag handle -->
+    <div style="width:36px; height:4px; background:#E0E0E0; border-radius:2px; margin:0 auto 20px"></div>
+
+    <h3 style="font-size:16px; font-weight:700; color:#2D2D2D; margin-bottom:6px">Формат Excel файла</h3>
+    <p style="font-size:13px; color:#6B6B6B; line-height:1.5; margin-bottom:18px">
+      Поддерживаются <b>.xlsx</b> и <b>.xls</b>. Первая строка может быть заголовком — определяется автоматически.
+    </p>
+
+    <!-- Колонки -->
+    <div style="font-size:11px; font-weight:600; color:#ADADAD; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px">Колонки</div>
+    <div style="background:#F7F7F7; border-radius:14px; overflow:hidden; margin-bottom:16px">
+      <div style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; border-bottom:1px solid #EBEBEB">
+        <span style="font-size:14px; font-weight:700; color:#2D2D2D; min-width:16px">A</span>
+        <div>
+          <div style="font-size:13px; font-weight:600; color:#2D2D2D">Тикер</div>
+          <div style="font-size:12px; color:#ADADAD; margin-top:2px">SBER, AAPL, NVDA, 0700.HK</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; border-bottom:1px solid #EBEBEB">
+        <span style="font-size:14px; font-weight:700; color:#22C55E; min-width:16px">B</span>
+        <div>
+          <div style="font-size:13px; font-weight:600; color:#2D2D2D">▲ Цель роста <span style="font-weight:400; color:#ADADAD">(необязательно)</span></div>
+          <div style="font-size:12px; color:#ADADAD; margin-top:2px">Цена, при достижении которой придёт уведомление о росте</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px">
+        <span style="font-size:14px; font-weight:700; color:#EF4444; min-width:16px">C</span>
+        <div>
+          <div style="font-size:13px; font-weight:600; color:#2D2D2D">▼ Цель падения <span style="font-weight:400; color:#ADADAD">(необязательно)</span></div>
+          <div style="font-size:12px; color:#ADADAD; margin-top:2px">Цена, при достижении которой придёт уведомление о снижении</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Пример -->
+    <div style="font-size:11px; font-weight:600; color:#ADADAD; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px">Пример</div>
+    <div style="background:#F7F7F7; border-radius:14px; overflow:hidden; margin-bottom:16px">
+      <table style="width:100%; border-collapse:collapse; font-size:13px">
+        <thead>
+          <tr style="border-bottom:1px solid #EBEBEB">
+            <th style="padding:10px 14px; text-align:left; font-size:11px; font-weight:600; color:#ADADAD">A — Тикер</th>
+            <th style="padding:10px 10px; text-align:right; font-size:11px; font-weight:600; color:#22C55E">B ▲</th>
+            <th style="padding:10px 14px 10px 10px; text-align:right; font-size:11px; font-weight:600; color:#EF4444">C ▼</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #EBEBEB">
+            <td style="padding:10px 14px; font-weight:600; color:#2D2D2D">SBER</td>
+            <td style="padding:10px; text-align:right; color:#22C55E">320.00</td>
+            <td style="padding:10px 14px 10px 10px; text-align:right; color:#EF4444">280.00</td>
+          </tr>
+          <tr style="border-bottom:1px solid #EBEBEB">
+            <td style="padding:10px 14px; font-weight:600; color:#2D2D2D">AAPL</td>
+            <td style="padding:10px; text-align:right; color:#22C55E">250.00</td>
+            <td style="padding:10px 14px 10px 10px; text-align:right; color:#ADADAD">—</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px; font-weight:600; color:#2D2D2D">0700.HK</td>
+            <td style="padding:10px; text-align:right; color:#ADADAD">—</td>
+            <td style="padding:10px 14px 10px 10px; text-align:right; color:#EF4444">350.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:12px; color:#ADADAD; line-height:1.5; margin-bottom:20px">
+      Хотя бы одна из колонок B или C должна быть заполнена. Биржа и валюта определяются автоматически.
+    </p>
+
+    <button onclick="document.getElementById('excel-info-modal').style.display='none'"
+            style="width:100%; padding:15px; border-radius:14px; background:#2D2D2D; color:#fff; font-size:15px; font-weight:600; margin-bottom:max(env(safe-area-inset-bottom),24px)">
+      Понятно
+    </button>
+
+  </div>
 </div>
