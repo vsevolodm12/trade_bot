@@ -42,9 +42,9 @@
     .app-wrap { max-width: 430px; margin: 0 auto; position: relative; min-height: 100dvh; }
 
     /* HTMX indicator */
-    .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+    .htmx-indicator { display: none; }
     .htmx-request .htmx-indicator,
-    .htmx-request.htmx-indicator { opacity: 1; }
+    .htmx-request.htmx-indicator { display: flex; }
 
     /* Full-screen add panel — slides in from right */
     #sheet {
@@ -120,22 +120,10 @@
   </div>
 
   <!-- ─── Full-screen Add Panel ───────────────────────────────────────────── -->
-  <div id="sheet" class="fixed inset-0 z-50 bg-surface flex flex-col"
-       style="max-width:430px; margin:0 auto; height:100dvh; overflow:hidden">
-    <!-- Compact header -->
-    <div class="flex items-center px-2 bg-white border-b border-line shrink-0"
-         style="height:48px">
-      <button onclick="closeSheet()"
-              class="flex items-center gap-0.5 px-2 text-accent text-[15px] font-medium active:opacity-50 transition-opacity h-full">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-        Назад
-      </button>
-    </div>
-    <!-- Scrollable body -->
-    <div id="sheet-body" class="overflow-y-auto no-scrollbar px-4 pt-4"
-         style="flex:1; min-height:0; padding-bottom:max(env(safe-area-inset-bottom),24px)">
+  <div id="sheet" class="fixed inset-0 z-50 bg-surface"
+       style="max-width:430px; margin:0 auto; height:100dvh; overflow-y:auto; -webkit-overflow-scrolling:touch">
+    <div id="sheet-body" class="px-4 pt-3"
+         style="padding-bottom:max(env(safe-area-inset-bottom),32px)">
     </div>
   </div>
 

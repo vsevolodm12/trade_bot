@@ -1,3 +1,16 @@
+<!-- Inline nav header -->
+<div class="flex items-center mb-5">
+  <button onclick="closeSheet()"
+          class="flex items-center gap-0.5 text-accent text-[15px] font-medium active:opacity-50 transition-opacity">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+    Назад
+  </button>
+  <span class="flex-1 text-center text-[15px] font-semibold text-ink">Добавить акцию</span>
+  <div style="width:60px"></div>
+</div>
+
 <!-- Поиск по тикеру -->
 <form hx-post="/partials/search"
       hx-target="#ticker-result"
