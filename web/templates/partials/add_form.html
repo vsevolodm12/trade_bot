@@ -42,15 +42,15 @@
   </div>
 </div>
 
-<!-- Разделитель -->
-<div class="flex items-center gap-3" style="margin: 0 0 20px">
+<!-- Разделитель — скрывается когда найдена акция -->
+<div id="divider-or" class="flex items-center gap-3" style="margin: 0 0 20px">
   <div class="flex-1 h-px bg-line"></div>
   <span class="text-xs text-faint">или</span>
   <div class="flex-1 h-px bg-line"></div>
 </div>
 
-<!-- Excel секция -->
-<div style="margin-bottom:20px">
+<!-- Excel секция — скрывается когда найдена акция -->
+<div id="excel-section" style="margin-bottom:20px">
 
   <!-- Кнопка + вопросик инлайн -->
   <div class="flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-surface">
@@ -196,6 +196,17 @@
 </div>
 
 <script>
+// Скрыть Excel-секцию и разделитель когда найдена акция
+document.body.addEventListener('htmx:afterSwap', function(e) {
+  if (e.detail.target && e.detail.target.id === 'ticker-result') {
+    const hasContent = e.detail.target.innerHTML.trim().length > 0;
+    const divider = document.getElementById('divider-or');
+    const excel   = document.getElementById('excel-section');
+    if (divider) divider.style.display = hasContent ? 'none' : '';
+    if (excel)   excel.style.display   = hasContent ? 'none' : '';
+  }
+});
+
 function openExcelInfo() {
   const panel = document.getElementById('excel-info-panel');
   panel.style.display = 'block';
