@@ -11,9 +11,8 @@
   <div style="width:60px"></div>
 </div>
 
-<!-- Search section — вертикально центрирована -->
-<div style="min-height:60vh; display:flex; flex-direction:column; justify-content:center; gap:0; padding:16px 0 24px">
-
+<!-- Search section — компактная, без 60vh центрирования -->
+<div style="padding:24px 0 20px">
   <form hx-post="/partials/search"
         hx-target="#ticker-result"
         hx-swap="innerHTML"
@@ -37,14 +36,10 @@
 
   </form>
 
-  <!-- Результат поиска — прямо под кнопкой -->
   <div id="search-spinner" class="htmx-indicator flex justify-center py-4">
     <div class="w-6 h-6 border-2 border-line border-t-accent rounded-full"
          style="animation: spin .75s linear infinite"></div>
   </div>
-
-  <div id="ticker-result"></div>
-
 </div>
 
 <!-- Разделитель -->
@@ -55,29 +50,30 @@
 </div>
 
 <!-- Excel секция -->
-<div class="flex items-center gap-2" style="margin-bottom: max(env(safe-area-inset-bottom), 32px)">
+<div style="margin-bottom:20px">
 
-  <label for="excel-file"
-         class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-surface text-ink text-sm font-semibold cursor-pointer transition-opacity active:opacity-70">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-    </svg>
-    Загрузить из Excel
-  </label>
-
-  <!-- Кнопка ? -->
-  <button type="button"
-          onclick="document.getElementById('excel-info-modal').style.display='flex'"
-          class="flex items-center justify-center rounded-xl bg-surface text-faint text-sm font-semibold transition-opacity active:opacity-50"
-          style="width:46px; height:46px; flex-shrink:0">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-      <line x1="12" y1="17" x2="12.01" y2="17"/>
-    </svg>
-  </button>
+  <!-- Кнопка + вопросик инлайн -->
+  <div class="flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-surface">
+    <label for="excel-file"
+           class="flex items-center gap-2 text-ink text-sm font-semibold cursor-pointer active:opacity-70">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+      </svg>
+      Загрузить из Excel
+    </label>
+    <button type="button"
+            onclick="openExcelInfo()"
+            class="flex items-center justify-center text-faint transition-opacity active:opacity-50"
+            style="flex-shrink:0; line-height:0; margin-left:2px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </button>
+  </div>
 
   <!-- Скрытый файловый инпут -->
   <form id="excel-form"
@@ -94,33 +90,45 @@
            onchange="htmx.trigger('#excel-form', 'submit')">
   </form>
 
+  <!-- Excel спиннер -->
+  <div id="excel-spinner" class="htmx-indicator flex flex-col items-center gap-2 py-6">
+    <div class="w-6 h-6 border-2 border-line border-t-accent rounded-full"
+         style="animation: spin .75s linear infinite"></div>
+    <p class="text-xs text-faint">Ищем акции и добавляем алерты…</p>
+  </div>
 </div>
 
-<!-- Excel спиннер -->
-<div id="excel-spinner" class="htmx-indicator flex flex-col items-center gap-2 py-6">
-  <div class="w-6 h-6 border-2 border-line border-t-accent rounded-full"
-       style="animation: spin .75s linear infinite"></div>
-  <p class="text-xs text-faint">Ищем акции и добавляем алерты…</p>
-</div>
+<!-- Результат поиска — ниже Excel -->
+<div id="ticker-result" style="margin-bottom:max(env(safe-area-inset-bottom),32px)"></div>
 
-<!-- ─── Модальное окно: формат Excel ──────────────────────────────────────── -->
-<div id="excel-info-modal"
-     onclick="if(event.target===this) this.style.display='none'"
-     style="display:none; position:fixed; inset:0; z-index:80; align-items:flex-end; justify-content:center; background:rgba(0,0,0,0.32)">
+<!-- ─── Полноэкранная панель: формат Excel ──────────────────────────────── -->
+<div id="excel-info-panel"
+     style="display:none; position:fixed; inset:0; z-index:90; max-width:430px; margin:0 auto;
+            background:#F7F7F7; overflow-y:auto; -webkit-overflow-scrolling:touch;
+            transform:translateX(100%); transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)">
 
-  <div style="width:100%; max-width:430px; background:#fff; border-radius:24px 24px 0 0; padding:12px 20px 0; box-shadow:0 -4px 32px rgba(0,0,0,0.12)">
+  <div class="px-4 pt-3" style="padding-bottom:max(env(safe-area-inset-bottom),32px)">
 
-    <!-- Drag handle -->
-    <div style="width:36px; height:4px; background:#E0E0E0; border-radius:2px; margin:0 auto 20px"></div>
+    <!-- Header -->
+    <div class="flex items-center" style="margin-bottom:24px">
+      <button onclick="closeExcelInfo()"
+              class="flex items-center gap-0.5 text-accent text-[15px] font-medium active:opacity-50 transition-opacity">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Назад
+      </button>
+      <span class="flex-1 text-center text-[15px] font-semibold text-ink">Формат Excel</span>
+      <div style="width:60px"></div>
+    </div>
 
-    <h3 style="font-size:16px; font-weight:700; color:#2D2D2D; margin-bottom:6px">Формат Excel файла</h3>
-    <p style="font-size:13px; color:#6B6B6B; line-height:1.5; margin-bottom:18px">
+    <p style="font-size:13px; color:#6B6B6B; line-height:1.5; margin-bottom:20px">
       Поддерживаются <b>.xlsx</b> и <b>.xls</b>. Первая строка может быть заголовком — определяется автоматически.
     </p>
 
     <!-- Колонки -->
     <div style="font-size:11px; font-weight:600; color:#ADADAD; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px">Колонки</div>
-    <div style="background:#F7F7F7; border-radius:14px; overflow:hidden; margin-bottom:16px">
+    <div style="background:#fff; border-radius:14px; overflow:hidden; margin-bottom:16px">
       <div style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; border-bottom:1px solid #EBEBEB">
         <span style="font-size:14px; font-weight:700; color:#2D2D2D; min-width:16px">A</span>
         <div>
@@ -146,7 +154,7 @@
 
     <!-- Пример -->
     <div style="font-size:11px; font-weight:600; color:#ADADAD; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px">Пример</div>
-    <div style="background:#F7F7F7; border-radius:14px; overflow:hidden; margin-bottom:16px">
+    <div style="background:#fff; border-radius:14px; overflow:hidden; margin-bottom:16px">
       <table style="width:100%; border-collapse:collapse; font-size:13px">
         <thead>
           <tr style="border-bottom:1px solid #EBEBEB">
@@ -175,14 +183,27 @@
       </table>
     </div>
 
-    <p style="font-size:12px; color:#ADADAD; line-height:1.5; margin-bottom:20px">
+    <p style="font-size:12px; color:#ADADAD; line-height:1.5; margin-bottom:24px">
       Хотя бы одна из колонок B или C должна быть заполнена. Биржа и валюта определяются автоматически.
     </p>
 
-    <button onclick="document.getElementById('excel-info-modal').style.display='none'"
+    <button onclick="closeExcelInfo()"
             style="width:100%; padding:15px; border-radius:14px; background:#2D2D2D; color:#fff; font-size:15px; font-weight:600; margin-bottom:max(env(safe-area-inset-bottom),24px)">
       Понятно
     </button>
 
   </div>
 </div>
+
+<script>
+function openExcelInfo() {
+  const panel = document.getElementById('excel-info-panel');
+  panel.style.display = 'block';
+  requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
+}
+function closeExcelInfo() {
+  const panel = document.getElementById('excel-info-panel');
+  panel.style.transform = 'translateX(100%)';
+  setTimeout(() => { panel.style.display = 'none'; }, 310);
+}
+</script>
