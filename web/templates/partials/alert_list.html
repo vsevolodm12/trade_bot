@@ -1,3 +1,13 @@
+{% if total is defined %}
+<h1 class="text-2xl font-bold text-ink" id="alert-count" hx-swap-oob="true">
+  {% if total == 0 %}Нет уведомлений
+  {% elif total == 1 %}1 уведомление
+  {% elif total <= 4 %}{{ total }} уведомления
+  {% else %}{{ total }} уведомлений
+  {% endif %}
+</h1>
+{% endif %}
+
 {% if not alerts %}
   <div class="flex flex-col items-center justify-center py-24 text-center px-8">
     <div class="text-5xl mb-5">📭</div>
@@ -29,7 +39,8 @@
     <div class="space-y-3">
       {% for a in foreign_alerts %}
         {% if a.exchange in ("HKEX", "HKSE") %}
-          {% set tv_url = "https://www.tradingview.com/symbols/HKEX-" ~ a.ticker ~ "/" %}
+          {% set _hk = a.ticker | replace(".HK", "") | replace(".hk", "") %}
+          {% set tv_url = "https://www.tradingview.com/symbols/HKEX-" ~ (_hk | int) ~ "/" %}
         {% else %}
           {% set tv_url = "https://www.tradingview.com/symbols/" ~ a.ticker ~ "/" %}
         {% endif %}
@@ -45,7 +56,8 @@
       {% if a.exchange == "MOEX" %}
         {% set tv_url = "https://www.tradingview.com/symbols/MOEX-" ~ a.ticker ~ "/" %}
       {% elif a.exchange in ("HKEX", "HKSE") %}
-        {% set tv_url = "https://www.tradingview.com/symbols/HKEX-" ~ a.ticker ~ "/" %}
+        {% set _hk = a.ticker | replace(".HK", "") | replace(".hk", "") %}
+        {% set tv_url = "https://www.tradingview.com/symbols/HKEX-" ~ (_hk | int) ~ "/" %}
       {% else %}
         {% set tv_url = "https://www.tradingview.com/symbols/" ~ a.ticker ~ "/" %}
       {% endif %}

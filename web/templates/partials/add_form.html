@@ -12,7 +12,7 @@
 </div>
 
 <!-- Search section — компактная, без 60vh центрирования -->
-<div style="padding:24px 0 20px">
+<div id="search-section" style="padding:24px 0 20px">
   <form hx-post="/partials/search"
         hx-target="#ticker-result"
         hx-swap="innerHTML"
@@ -196,14 +196,16 @@
 </div>
 
 <script>
-// Скрыть Excel-секцию и разделитель когда найдена акция
+// Скрыть поиск, Excel-секцию и разделитель когда найдена акция
 document.body.addEventListener('htmx:afterSwap', function(e) {
   if (e.detail.target && e.detail.target.id === 'ticker-result') {
     const hasContent = e.detail.target.innerHTML.trim().length > 0;
-    const divider = document.getElementById('divider-or');
-    const excel   = document.getElementById('excel-section');
-    if (divider) divider.style.display = hasContent ? 'none' : '';
-    if (excel)   excel.style.display   = hasContent ? 'none' : '';
+    const searchSection = document.getElementById('search-section');
+    const divider       = document.getElementById('divider-or');
+    const excel         = document.getElementById('excel-section');
+    if (searchSection) searchSection.style.display = hasContent ? 'none' : '';
+    if (divider)       divider.style.display       = hasContent ? 'none' : '';
+    if (excel)         excel.style.display         = hasContent ? 'none' : '';
   }
 });
 

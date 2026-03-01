@@ -131,18 +131,33 @@
 </div><!-- /app-wrap -->
 
 <script>
+  function _blockBodyScroll(e) {
+    // Разрешаем скролл только внутри самого шита
+    if (!document.getElementById('sheet').contains(e.target)) {
+      e.preventDefault();
+    }
+  }
+
   function openSheet() {
     document.getElementById('sheet').classList.add('open');
-    // Заморозить фоновый скролл пока шит открыт
     document.getElementById('main-scroll').style.overflow = 'hidden';
+    // Блокируем touchmove на iOS чтобы фон не скроллился сквозь шит
+    document.addEventListener('touchmove', _blockBodyScroll, { passive: false });
   }
   function closeSheet() {
     document.getElementById('sheet').classList.remove('open');
     document.getElementById('sheet-body').innerHTML = '';
-    // Восстановить скролл фонового контента
     document.getElementById('main-scroll').style.overflow = '';
+    document.removeEventListener('touchmove', _blockBodyScroll);
   }
-  document.body.addEventListener('alertAdded', closeSheet);
+  document.body.addEventListener('alertAdded', function () {
+    closeSheet();
+    // Явный рефреш списка — на случай если swap из-под шита не прошёл
+    htmx.ajax('GET', '/partials/alerts?market=all&sort=default', {
+      target:  '#alerts-wrap',
+      swap:    'innerHTML',
+    });
+  });
 
   // ─── Custom confirm modal (replaces browser confirm) ───────────────────────
   (function () {

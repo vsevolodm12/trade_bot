@@ -333,7 +333,12 @@ def _tradingview_url(ticker: str, exchange: str) -> str:
     if exchange == "MOEX":
         return f"https://www.tradingview.com/symbols/MOEX-{ticker}/"
     if exchange in ("HKEX", "HKSE"):
-        return f"https://www.tradingview.com/symbols/HKEX-{ticker}/"
+        # Yahoo Finance: 0700.HK → TradingView: HKEX-700 (strip .HK, remove leading zeros)
+        try:
+            tv_ticker = str(int(ticker.upper().replace(".HK", "")))
+        except ValueError:
+            tv_ticker = ticker.replace(".HK", "")
+        return f"https://www.tradingview.com/symbols/HKEX-{tv_ticker}/"
     return f"https://www.tradingview.com/symbols/{ticker}/"
 
 
@@ -443,7 +448,7 @@ async def alerts_page(request: Request, session: Optional[str] = Cookie(None)):
     return templates.TemplateResponse("index.html", {
         "request":        request,
         "alerts":         grouped,
-        "total":          len(grouped),
+        "total":          len(alerts),
         "active":         "alerts",
         "market":         "all",
         "display_currency": disp_cur,
@@ -479,6 +484,7 @@ async def alerts_partial(
         "alerts":  grouped,
         "market":  market,
         "sort":    sort,
+        "total":   len(alerts),
     })
 
 
