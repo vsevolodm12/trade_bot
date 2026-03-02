@@ -27,6 +27,7 @@ import time
 from telegram import Bot
 from telegram.ext import ContextTypes
 
+from bot.config import ALLOWED_USER_IDS
 from bot.database import Database
 from bot.keyboards import alert_action_keyboard
 from bot.services.moex import get_stock_price as moex_price
@@ -195,13 +196,16 @@ async def _send_notification(
 
     keyboard = alert_action_keyboard(alert["id"], alert["ticker"], alert["exchange"])
 
-    try:
-        await bot.send_message(
-            chat_id=alert["user_id"],
-            text=text,
-            parse_mode="Markdown",
-            reply_markup=keyboard,
-        )
-        logger.info("Уведомление: %s → user %s", alert["ticker"], alert["user_id"])
-    except Exception as exc:
-        logger.error("Не удалось отправить уведомление user %s: %s", alert["user_id"], exc)
+    # Отправляем всем разрешённым пользователям (или только владельцу алерта)
+    recipients = ALLOWED_USER_IDS if ALLOWED_USER_IDS else [alert["user_id"]]
+    for uid in recipients:
+        try:
+            await bot.send_message(
+                chat_id=uid,
+                text=text,
+                parse_mode="Markdown",
+                reply_markup=keyboard,
+            )
+            logger.info("Уведомление: %s → user %s", alert["ticker"], uid)
+        except Exception as exc:
+            logger.error("Не удалось отправить уведомление user %s: %s", uid, exc)
