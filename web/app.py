@@ -448,7 +448,7 @@ async def alerts_page(request: Request, session: Optional[str] = Cookie(None)):
     return templates.TemplateResponse("index.html", {
         "request":        request,
         "alerts":         grouped,
-        "total":          len(alerts),
+        "total":          len(grouped),
         "active":         "alerts",
         "market":         "all",
         "display_currency": disp_cur,
@@ -484,7 +484,6 @@ async def alerts_partial(
         "alerts":  grouped,
         "market":  market,
         "sort":    sort,
-        "total":   len(alerts),
     })
 
 
