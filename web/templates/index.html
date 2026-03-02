@@ -38,7 +38,7 @@
       ("all", "Все"),
       ("ru",  "РФ"),
       ("us",  "США"),
-      ("hk",  "Гонконг"),
+      ("hk",  "HK"),
     ] %}
     {% for key, label in tabs %}
       <button
@@ -92,6 +92,25 @@
   </div>
 </div>
 
+
+<!-- Поиск по тикеру -->
+<div class="px-4 pb-3">
+  <div class="relative">
+    <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
+         width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input id="ticker-search"
+           type="text"
+           inputmode="search"
+           autocomplete="off"
+           autocorrect="off"
+           spellcheck="false"
+           placeholder="Поиск по тикеру..."
+           class="w-full pl-9 pr-4 py-2.5 rounded-full bg-white text-sm text-ink placeholder:text-faint outline-none"
+           oninput="filterBySearch(this.value)">
+  </div>
+</div>
 
 <!-- Список алертов — авто-обновление каждые 60с -->
 <div id="alerts-wrap"
@@ -159,6 +178,24 @@
     const wrap = document.getElementById('sort-wrap');
     if (wrap && !wrap.contains(e.target)) {
       document.getElementById('sort-menu').classList.add('hidden');
+    }
+  });
+
+  function filterBySearch(query) {
+    const q = query.trim().toLowerCase();
+    document.querySelectorAll('#alerts-wrap [data-ticker]').forEach(card => {
+      if (!q) { card.style.display = ''; return; }
+      const ticker = (card.dataset.ticker || '').toLowerCase();
+      const name   = (card.dataset.name   || '').toLowerCase();
+      card.style.display = (ticker.includes(q) || name.includes(q)) ? '' : 'none';
+    });
+  }
+
+  // Переприменяем поиск после HTMX-обновления списка
+  document.addEventListener('htmx:afterSwap', e => {
+    if (e.detail.target.id === 'alerts-wrap') {
+      const q = document.getElementById('ticker-search')?.value || '';
+      if (q) filterBySearch(q);
     }
   });
 </script>

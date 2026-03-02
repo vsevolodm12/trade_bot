@@ -1,6 +1,6 @@
 {% if a.is_combined %}
 {# ─── Combined card (above + below targets) ─────────────────────────────── #}
-<div class="bg-white rounded-2xl mx-4 p-5" id="card-{{ a.id_above }}-{{ a.id_below }}">
+<div class="bg-white rounded-2xl mx-4 p-5" id="card-{{ a.id_above }}-{{ a.id_below }}" data-ticker="{{ a.ticker }}" data-name="{{ a.company_name | lower }}">
 
   <!-- Top row: ticker + exchange + action buttons -->
   <div class="flex items-start justify-between mb-1">
@@ -100,7 +100,7 @@
 
 {% else %}
 {# ─── Single-direction card ──────────────────────────────────────────────── #}
-<div class="bg-white rounded-2xl mx-4 p-5" id="card-{{ a.id }}">
+<div class="bg-white rounded-2xl mx-4 p-5" id="card-{{ a.id }}" data-ticker="{{ a.ticker }}" data-name="{{ a.company_name | lower }}">
 
   <!-- Top row: ticker + exchange badge + action buttons -->
   <div class="flex items-start justify-between mb-1">
