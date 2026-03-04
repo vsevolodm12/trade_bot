@@ -20,6 +20,50 @@
         class="space-y-3">
 
     <div>
+      <label class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em] block mb-1.5">
+        Направление
+      </label>
+      <div class="flex gap-2" id="dir-wrap-{{ a.id }}">
+        <label class="dir-btn flex-1 flex items-center justify-center py-2.5 rounded-xl border cursor-pointer transition-colors"
+               data-value="above"
+               data-active-cls="border-green-500 bg-green-50 text-green-600">
+          <input type="radio" name="direction" value="above" class="sr-only"
+                 {% if a.direction == 'above' %}checked{% endif %}>
+          <span class="text-sm font-semibold">▲ Рост</span>
+        </label>
+        <label class="dir-btn flex-1 flex items-center justify-center py-2.5 rounded-xl border cursor-pointer transition-colors"
+               data-value="below"
+               data-active-cls="border-red-500 bg-red-50 text-red-600">
+          <input type="radio" name="direction" value="below" class="sr-only"
+                 {% if a.direction == 'below' %}checked{% endif %}>
+          <span class="text-sm font-semibold">▼ Падение</span>
+        </label>
+      </div>
+      <script>
+        (function() {
+          var wrap = document.getElementById('dir-wrap-{{ a.id }}');
+          var inactive = 'border-line bg-surface text-faint';
+          function update() {
+            wrap.querySelectorAll('.dir-btn').forEach(function(lbl) {
+              var radio = lbl.querySelector('input[type=radio]');
+              var active = lbl.dataset.activeCls;
+              if (radio.checked) {
+                lbl.className = lbl.className.replace(inactive, '').trim() + ' ' + active;
+              } else {
+                active.split(' ').forEach(function(c) { lbl.classList.remove(c); });
+                inactive.split(' ').forEach(function(c) { lbl.classList.add(c); });
+              }
+            });
+          }
+          update();
+          wrap.querySelectorAll('input[type=radio]').forEach(function(r) {
+            r.addEventListener('change', update);
+          });
+        })();
+      </script>
+    </div>
+
+    <div>
       <label class="text-[11px] font-medium text-[#8E8E93] uppercase tracking-[0.05em]">
         Целевая цена ({{ a.currency }})
       </label>

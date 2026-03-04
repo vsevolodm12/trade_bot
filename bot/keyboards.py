@@ -32,7 +32,7 @@ def alert_action_keyboard(
                     "🗑 Удалить алерт", callback_data=f"delete_alert_{alert_id}"
                 ),
                 InlineKeyboardButton(
-                    "⬆️ Переставить выше", callback_data=f"move_target_{alert_id}"
+                    "🔄 Переставить", callback_data=f"move_target_{alert_id}"
                 ),
             ],
             [

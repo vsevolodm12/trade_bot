@@ -883,6 +883,7 @@ async def update_target(
     request: Request,
     alert_id:     int,
     target_price: float = Form(...),
+    direction:    Optional[str] = Form(None),
     session: Optional[str] = Cookie(None),
 ):
     if not is_authenticated(session):
@@ -892,8 +893,9 @@ async def update_target(
     if not alert:
         return HTMLResponse("", status_code=404)
 
-    current   = alert.get("current_price") or alert["target_price"]
-    direction = "above" if target_price >= current else "below"
+    current = alert.get("current_price") or alert["target_price"]
+    if direction not in ("above", "below"):
+        direction = "above" if target_price >= current else "below"
 
     await db.update_alert_target(
         alert_id, alert["user_id"], target_price, direction, current

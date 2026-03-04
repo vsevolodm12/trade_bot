@@ -38,11 +38,6 @@ async def move_target_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await query.edit_message_text("❌ Алерт не найден.")
         return ConversationHandler.END
 
-    # Проверяем, что пользователь — владелец алерта
-    if alert["user_id"] != update.effective_user.id:
-        await query.answer("⛔ Это не ваш алерт.", show_alert=True)
-        return ConversationHandler.END
-
     context.user_data["move_alert_id"] = alert_id
     context.user_data["move_alert"]    = alert
 
@@ -82,7 +77,7 @@ async def new_target_received(
         return ConversationHandler.END
 
     db      = context.bot_data["db"]
-    user_id = update.effective_user.id
+    user_id = alert["user_id"]
 
     # Получаем свежую цену для определения направления
     if alert["exchange"] == "MOEX":
